@@ -2,25 +2,47 @@
 
 import { useEffect, useState } from "react";
 import { UserProfile } from "@clerk/nextjs";
-import { Sparkles, CheckCircle2, Zap } from "lucide-react";
+import { Sparkles, CheckCircle2, Zap, Save } from "lucide-react";
 import { FREE_DAILY_LIMIT, FREE_MODELS, PAID_MODELS } from "@/lib/models";
 
 interface UserData {
   tier: "FREE" | "SUPER_SPORK";
   dailyMessages: number;
   dailyLimit: number;
+  customInstructions: string;
 }
 
 export default function SettingsPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [upgrading, setUpgrading] = useState(false);
+  const [instructions, setInstructions] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch("/api/user")
       .then((r) => r.json())
-      .then(setUserData)
+      .then((data) => {
+        setUserData(data);
+        setInstructions(data.customInstructions ?? "");
+      })
       .catch(() => {});
   }, []);
+
+  const handleSaveInstructions = async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customInstructions: instructions }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleUpgrade = async () => {
     setUpgrading(true);
@@ -123,6 +145,33 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Custom Instructions */}
+      <div className="mb-8">
+        <h2 className="text-sm font-semibold text-[#666] uppercase tracking-wider mb-1">
+          Custom Instructions
+        </h2>
+        <p className="text-xs text-[#555] mb-3">
+          Tell Spork about yourself. This is injected into every conversation.
+        </p>
+        <textarea
+          value={instructions}
+          onChange={(e) => setInstructions(e.target.value)}
+          placeholder="e.g. I'm a senior TypeScript developer. Prefer concise answers. Always use functional React patterns."
+          rows={4}
+          className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-[#f0f0f0] placeholder-[#444] resize-none outline-none focus:border-[#3a3a3a] transition-colors"
+        />
+        <div className="flex justify-end mt-2">
+          <button
+            onClick={handleSaveInstructions}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] hover:bg-[#9061f9] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+          >
+            <Save size={13} />
+            {saved ? "Saved!" : saving ? "Saving..." : "Save"}
+          </button>
         </div>
       </div>
 

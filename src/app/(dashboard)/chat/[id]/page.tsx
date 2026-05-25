@@ -9,7 +9,7 @@ import { MessageInput } from "@/components/chat/MessageInput";
 import { AgentSelector } from "@/components/agents/AgentSelector";
 import { ForkButton } from "@/components/chat/ForkButton";
 import { DEFAULT_FREE_MODEL } from "@/lib/models";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Share2, Download, Globe, Lock } from "lucide-react";
 import type { Message } from "ai";
 
 interface ConversationData {
@@ -17,6 +17,7 @@ interface ConversationData {
   title: string;
   model: string;
   agentId: string | null;
+  isPublic: boolean;
   messages: Array<{ id: string; role: string; content: string }>;
 }
 
@@ -35,6 +36,8 @@ export default function ChatPage() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
+  const [convTitle, setConvTitle] = useState("");
   const sentFirstRef = useRef(false);
 
   useEffect(() => {
@@ -45,6 +48,8 @@ export default function ChatPage() {
       .then(([conv, user]: [ConversationData, UserData]) => {
         setSelectedModel(conv.model ?? DEFAULT_FREE_MODEL);
         setSelectedAgent(conv.agentId ?? null);
+        setIsPublic(conv.isPublic ?? false);
+        setConvTitle(conv.title ?? "Conversation");
         const validRoles = ["user", "assistant", "system", "data"] as const;
         setInitialMessages(
           conv.messages.map((m) => ({
@@ -75,6 +80,32 @@ export default function ChatPage() {
     router.replace(`/chat/${id}`);
     append({ role: "user", content: q });
   }, [loaded, searchParams, id, router, append, isLoading]);
+
+  const handleTogglePublic = async () => {
+    const res = await fetch(`/api/conversations/${id}/public`, { method: "PATCH" });
+    if (res.ok) {
+      const data = await res.json();
+      setIsPublic(data.isPublic);
+    }
+  };
+
+  const handleExport = () => {
+    const lines: string[] = [`# ${convTitle}`, ""];
+    for (const msg of messages) {
+      if (msg.role === "user") {
+        lines.push(`**You:** ${msg.content}`, "");
+      } else if (msg.role === "assistant") {
+        lines.push(`**Spork:** ${msg.content}`, "");
+      }
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${convTitle.slice(0, 40).replace(/[^a-z0-9]/gi, "-")}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -110,7 +141,26 @@ export default function ChatPage() {
               onChange={setSelectedAgent}
               userTier={userData.tier}
             />
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-1.5">
+              <button
+                onClick={handleExport}
+                title="Export as Markdown"
+                className="p-1.5 rounded-lg text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+              >
+                <Download size={15} />
+              </button>
+              <button
+                onClick={handleTogglePublic}
+                title={isPublic ? "Remove from feed" : "Share to feed"}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
+                  isPublic
+                    ? "text-[#a78bfa] bg-[#a78bfa]/10 hover:bg-[#a78bfa]/20"
+                    : "text-[#555] hover:text-white hover:bg-[#1a1a1a]"
+                }`}
+              >
+                {isPublic ? <Globe size={13} /> : <Lock size={13} />}
+                {isPublic ? "Public" : "Private"}
+              </button>
               <ForkButton
                 conversationId={id}
                 userTier={userData.tier}

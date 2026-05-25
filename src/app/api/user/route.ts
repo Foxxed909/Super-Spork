@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { FREE_DAILY_LIMIT } from "@/lib/models";
 
@@ -18,5 +18,28 @@ export async function GET() {
     tier: user.tier,
     dailyMessages: effectiveDailyMessages,
     dailyLimit: FREE_DAILY_LIMIT,
+    customInstructions: user.customInstructions ?? "",
   });
+}
+
+export async function PATCH(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+
+  const user = await db.user.findUnique({ where: { clerkId: userId } });
+  if (!user) return new NextResponse("User not found", { status: 404 });
+
+  const { customInstructions } = await req.json();
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      customInstructions:
+        typeof customInstructions === "string" && customInstructions.trim()
+          ? customInstructions.trim()
+          : null,
+    },
+  });
+
+  return new NextResponse(null, { status: 204 });
 }

@@ -15,6 +15,7 @@ import {
   Trash2,
   Bot,
   Rss,
+  Search,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/conversations")
@@ -122,13 +124,35 @@ export function Sidebar() {
 
       {/* Conversations */}
       {!collapsed && (
-        <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          {/* Search */}
+          {conversations.length > 0 && (
+            <div className="px-2 pt-1 pb-0.5">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg">
+                <Search size={12} className="text-[#555] shrink-0" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="flex-1 bg-transparent text-xs text-[#ccc] placeholder-[#555] outline-none"
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
           {conversations.length === 0 ? (
             <p className="px-3 py-4 text-xs text-[#555] text-center">
               No conversations yet
             </p>
           ) : (
-            conversations.map((conv) => {
+            conversations
+              .filter((c) =>
+                search.trim()
+                  ? c.title.toLowerCase().includes(search.toLowerCase())
+                  : true
+              )
+              .map((conv) => {
               const isActive = pathname === `/chat/${conv.id}`;
               return (
                 <Link
@@ -162,6 +186,7 @@ export function Sidebar() {
               );
             })
           )}
+          </div>
         </div>
       )}
 
