@@ -99,7 +99,10 @@ export async function POST(req: NextRequest) {
     ? [{ role: "system", content: systemContent }, ...(messages as CoreMessage[])]
     : (messages as CoreMessage[]);
 
-  const apiKey = user.openrouterKey ?? process.env.OPENROUTER_API_KEY ?? "";
+  const apiKey = user.openrouterKey ?? process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return new Response("OpenRouter API key not configured", { status: 500 });
+  }
   const openrouter = makeOpenRouter(apiKey);
 
   const lastUserMessage = [...messages]

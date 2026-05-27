@@ -11,6 +11,8 @@ import {
   Globe,
   Lock,
   Eye,
+  Search,
+  X,
 } from "lucide-react";
 import { cn, truncate } from "@/lib/utils";
 
@@ -39,6 +41,7 @@ export default function HubPage() {
   const [publicPrompts, setPublicPrompts] = useState<PublicPrompt[]>([]);
   const [myPrompts, setMyPrompts] = useState<MyPrompt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   // Save prompt form
   const [showForm, setShowForm] = useState(false);
@@ -97,12 +100,14 @@ export default function HubPage() {
   };
 
   const handleDeletePrompt = async (id: string) => {
-    await fetch("/api/prompts", {
+    const res = await fetch("/api/prompts", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    setMyPrompts((prev) => prev.filter((p) => p.id !== id));
+    if (res.ok) {
+      setMyPrompts((prev) => prev.filter((p) => p.id !== id));
+    }
   };
 
   return (
@@ -140,12 +145,43 @@ export default function HubPage() {
         </div>
       ) : tab === "prompts" ? (
         <div className="space-y-3">
+          {/* Search bar */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-[#2a2a2a] rounded-xl">
+            <Search size={13} className="text-[#555] shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search prompts..."
+              className="flex-1 bg-transparent text-sm text-[#ccc] placeholder-[#555] outline-none"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="text-[#555] hover:text-white transition-colors">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
           {publicPrompts.length === 0 ? (
             <p className="text-center text-[#555] text-sm py-12">
               No public prompts yet. Be the first to share one!
             </p>
-          ) : (
-            publicPrompts.map((p) => {
+          ) : (() => {
+            const filtered = query.trim()
+              ? publicPrompts.filter(
+                  (p) =>
+                    p.title.toLowerCase().includes(query.toLowerCase()) ||
+                    p.content.toLowerCase().includes(query.toLowerCase())
+                )
+              : publicPrompts;
+            if (filtered.length === 0) {
+              return (
+                <p className="text-center text-[#555] text-sm py-8">
+                  No prompts match &ldquo;{query}&rdquo;
+                </p>
+              );
+            }
+            return filtered.map((p) => {
               const handle = p.user.username ?? p.user.email.split("@")[0];
               return (
                 <div
@@ -174,8 +210,8 @@ export default function HubPage() {
                   </div>
                 </div>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       ) : (
         <div className="space-y-3">

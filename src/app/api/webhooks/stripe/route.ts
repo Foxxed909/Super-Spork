@@ -4,9 +4,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Tier } from "@prisma/client";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return new NextResponse("Stripe not configured", { status: 500 });
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
   const body = await req.text();
   const headerPayload = await headers();
   const sig = headerPayload.get("stripe-signature");

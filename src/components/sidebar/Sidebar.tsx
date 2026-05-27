@@ -43,20 +43,27 @@ export function Sidebar() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState(false);
+
+  const fetchSidebarData = () => {
+    setLoadError(false);
+    Promise.all([
+      fetch("/api/conversations").then((r) => r.json()),
+      fetch("/api/user").then((r) => r.json()),
+    ])
+      .then(([convs, user]) => {
+        setConversations(convs);
+        setUserData(user);
+      })
+      .catch(() => setLoadError(true));
+  };
 
   useEffect(() => {
-    fetch("/api/conversations")
-      .then((r) => r.json())
-      .then(setConversations)
-      .catch(() => {});
-
-    fetch("/api/user")
-      .then((r) => r.json())
-      .then(setUserData)
-      .catch(() => {});
+    fetchSidebarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  const handleNewChat = async () => {
+  const startChat = async () => {
     const res = await fetch("/api/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -113,7 +120,7 @@ export function Sidebar() {
       {/* New Chat */}
       <div className="p-2">
         <button
-          onClick={handleNewChat}
+          onClick={startChat}
           className={cn(
             "flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm font-medium",
             "bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20",
@@ -145,7 +152,17 @@ export function Sidebar() {
             </div>
           )}
           <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
-          {conversations.length === 0 ? (
+          {loadError ? (
+            <div className="px-3 py-4 text-center">
+              <p className="text-xs text-[#555] mb-2">Couldn&apos;t load</p>
+              <button
+                onClick={fetchSidebarData}
+                className="text-xs text-[#a78bfa] hover:text-[#c4b5fd] transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : conversations.length === 0 ? (
             <p className="px-3 py-4 text-xs text-[#555] text-center">
               No conversations yet
             </p>

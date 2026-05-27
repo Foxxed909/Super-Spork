@@ -32,6 +32,22 @@ export const FREE_MODELS: ModelConfig[] = [
     contextWindow: "1M",
     provider: "NVIDIA",
   },
+  {
+    id: "google/gemma-2-9b-it:free",
+    name: "Gemma 2 9B",
+    description: "Google's open 9B model — fast and capable",
+    tier: "free",
+    contextWindow: "8K",
+    provider: "Google",
+  },
+  {
+    id: "microsoft/phi-3-mini-128k-instruct:free",
+    name: "Phi-3 Mini",
+    description: "Microsoft's compact model with 128K context",
+    tier: "free",
+    contextWindow: "128K",
+    provider: "Microsoft",
+  },
 ];
 
 export const PAID_MODELS: ModelConfig[] = [
@@ -82,6 +98,30 @@ export const PAID_MODELS: ModelConfig[] = [
     tier: "paid",
     contextWindow: "131K",
     provider: "xAI",
+  },
+  {
+    id: "google/gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
+    description: "Google's fastest next-gen model",
+    tier: "paid",
+    contextWindow: "1M",
+    provider: "Google",
+  },
+  {
+    id: "meta-llama/llama-3.1-405b",
+    name: "Llama 3.1 405B",
+    description: "Meta's largest open-weight model",
+    tier: "paid",
+    contextWindow: "128K",
+    provider: "Meta",
+  },
+  {
+    id: "deepseek/deepseek-r1",
+    name: "DeepSeek R1",
+    description: "DeepSeek's chain-of-thought reasoning model",
+    tier: "paid",
+    contextWindow: "64K",
+    provider: "DeepSeek",
   },
 ];
 

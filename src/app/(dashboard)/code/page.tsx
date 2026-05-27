@@ -7,7 +7,7 @@ import { Sparkles, MessageSquare, Code2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-type CodeMode = "chat" | "editor" | "inline";
+type EditorView = "chat" | "editor" | "inline";
 
 interface UserData {
   tier: "FREE" | "SUPER_SPORK";
@@ -15,7 +15,7 @@ interface UserData {
 
 export default function CodePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [mode, setMode] = useState<CodeMode>("chat");
+  const [mode, setMode] = useState<EditorView>("chat");
   const [editorCode, setEditorCode] = useState("// Paste or write your code here\n");
 
   useEffect(() => {
@@ -110,10 +110,10 @@ function ModeTabs({
   mode,
   onChange,
 }: {
-  mode: CodeMode;
-  onChange: (m: CodeMode) => void;
+  mode: EditorView;
+  onChange: (m: EditorView) => void;
 }) {
-  const tabs: { id: CodeMode; label: string; icon: React.ReactNode }[] = [
+  const tabs: { id: EditorView; label: string; icon: React.ReactNode }[] = [
     { id: "chat", label: "Chat", icon: <MessageSquare size={14} /> },
     { id: "editor", label: "Editor", icon: <Code2 size={14} /> },
     { id: "inline", label: "Inline", icon: <Layers size={14} /> },

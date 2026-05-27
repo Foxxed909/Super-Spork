@@ -39,13 +39,15 @@ export default function SettingsPage() {
   const handleSaveInstructions = async () => {
     setSaving(true);
     try {
-      await fetch("/api/user", {
+      const res = await fetch("/api/user", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customInstructions: instructions }),
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
     } finally {
       setSaving(false);
     }
@@ -76,8 +78,11 @@ export default function SettingsPage() {
     setUpgrading(true);
     try {
       const res = await fetch("/api/upgrade", { method: "POST" });
+      if (!res.ok) throw new Error("Upgrade request failed");
       const { url } = await res.json();
       if (url) window.location.href = url;
+    } catch (err) {
+      console.error("Upgrade error:", err);
     } finally {
       setUpgrading(false);
     }

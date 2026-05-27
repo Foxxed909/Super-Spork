@@ -32,7 +32,7 @@ export function MessageInput({
     ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
   }, [value]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const onEnterSend = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!isLoading && value.trim()) onSubmit();
@@ -53,7 +53,7 @@ export function MessageInput({
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={onEnterSend}
           disabled={disabled || isLoading}
           placeholder={placeholder}
           rows={1}

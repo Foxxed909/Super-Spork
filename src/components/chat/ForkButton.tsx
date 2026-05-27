@@ -40,8 +40,11 @@ export function ForkButton({ conversationId, userTier, onForked }: ForkButtonPro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, newModel }),
       });
+      if (!res.ok) throw new Error("Fork failed");
       const data = await res.json();
       if (data.id) onForked(data.id);
+    } catch (err) {
+      console.error("Fork error:", err);
     } finally {
       setForking(false);
     }

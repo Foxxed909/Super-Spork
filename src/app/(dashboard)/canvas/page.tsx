@@ -13,6 +13,7 @@ import {
   Globe,
   Copy,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -53,6 +54,18 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const handleDownload = () => {
+    const ext = artifact.type === "html" ? "html" : artifact.type === "markdown" ? "md" : artifact.lang ?? "txt";
+    const mime = artifact.type === "html" ? "text/html" : "text/plain";
+    const blob = new Blob([artifact.content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `artifact-${Date.now()}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (artifact.type === "html") {
     return (
       <div className="flex flex-col h-full">
@@ -70,7 +83,15 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
               <RefreshCw size={12} />
             </button>
             <button
+              onClick={handleDownload}
+              title="Download"
+              className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
+            >
+              <Download size={12} />
+            </button>
+            <button
               onClick={handleCopy}
+              title="Copy source"
               className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
             >
               <Copy size={12} />
@@ -96,12 +117,22 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
             <FileText size={12} />
             <span>Document</span>
           </div>
-          <button
-            onClick={handleCopy}
-            className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
-          >
-            <Copy size={12} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleDownload}
+              title="Download"
+              className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
+            >
+              <Download size={12} />
+            </button>
+            <button
+              onClick={handleCopy}
+              title="Copy"
+              className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
+            >
+              <Copy size={12} />
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="prose prose-invert prose-sm max-w-none">
@@ -122,16 +153,26 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
           <Code2 size={12} />
           <span>{artifact.lang ?? "code"}</span>
         </div>
-        <button
-          onClick={handleCopy}
-          className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
-        >
-          {copied ? (
-            <span className="text-xs text-green-400">Copied!</span>
-          ) : (
-            <Copy size={12} />
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleDownload}
+            title="Download"
+            className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
+          >
+            <Download size={12} />
+          </button>
+          <button
+            onClick={handleCopy}
+            title="Copy"
+            className="p-1.5 rounded text-[#555] hover:text-white transition-colors"
+          >
+            {copied ? (
+              <span className="text-xs text-green-400">Copied!</span>
+            ) : (
+              <Copy size={12} />
+            )}
+          </button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto">
         <pre className="p-4 text-sm text-[#f0f0f0] font-mono leading-relaxed whitespace-pre-wrap">
@@ -226,7 +267,7 @@ export default function CanvasPage() {
     );
   }
 
-  const CANVAS_STARTERS = [
+  const CANVAS_PROMPTS = [
     "Build me a beautiful landing page for a startup",
     "Create an interactive todo app with local storage",
     "Write a markdown report on the history of the internet",
@@ -254,7 +295,7 @@ export default function CanvasPage() {
                 Describe what you want to create
               </p>
               <div className="space-y-2">
-                {CANVAS_STARTERS.map((s) => (
+                {CANVAS_PROMPTS.map((s) => (
                   <button
                     key={s}
                     onClick={() => {
