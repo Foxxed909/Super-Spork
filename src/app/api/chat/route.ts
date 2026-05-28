@@ -4,6 +4,18 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { canUseModel, hasReachedDailyLimit, getSystemPrompt } from "@/lib/tier";
+import { BERRY_MODEL, BERRY_PRIMARY_MODEL, BERRY_FALLBACK_MODEL } from "@/lib/models";
+import { getAgent } from "@/lib/agents";
+
+// Resolve Berry-alpha1937 virtual model to its actual OpenRouter backend
+function resolveModel(model: string, agentId?: string): string {
+  if (model === BERRY_MODEL.id) {
+    // If the Berry agent is selected, use the primary Nemotron model
+    // Fall back to GPT-4.1 if Nemotron is unavailable (handled at request level)
+    return agentId === "berry" ? BERRY_PRIMARY_MODEL : BERRY_FALLBACK_MODEL;
+  }
+  return model;
+}
 
 function makeOpenRouter(apiKey: string) {
   return createOpenAI({
@@ -37,7 +49,7 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  if (!model || !messages?.length) {
+  if (!model || !Array.isArray(messages) || messages.length === 0) {
     return new Response("Missing required fields", { status: 400 });
   }
 
@@ -99,8 +111,14 @@ export async function POST(req: NextRequest) {
     ? [{ role: "system", content: systemContent }, ...(messages as CoreMessage[])]
     : (messages as CoreMessage[]);
 
-  const apiKey = user.openrouterKey ?? process.env.OPENROUTER_API_KEY ?? "";
+  const apiKey = user.openrouterKey ?? process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return new Response("OpenRouter API key not configured", { status: 500 });
+  }
   const openrouter = makeOpenRouter(apiKey);
+
+  // Resolve Berry virtual model to actual OpenRouter backend
+  const resolvedModel = resolveModel(model, agentId);
 
   const lastUserMessage = [...messages]
     .reverse()
@@ -114,7 +132,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = streamText({
-      model: openrouter(model),
+      model: openrouter(resolvedModel),
       messages: allMessages,
       onFinish: async ({ text }) => {
         if (conversationId && text) {
@@ -122,12 +140,10 @@ export async function POST(req: NextRequest) {
             data: { conversationId, role: "assistant", content: text },
           });
 
-          const existingMessages = await db.message.count({
-            where: { conversationId, role: "assistant" },
-          });
-          if (existingMessages === 1 && lastUserMessage) {
-            await db.conversation.update({
-              where: { id: conversationId },
+          // Atomic sentinel update prevents title race condition (Bug 7)
+          if (lastUserMessage) {
+            await db.conversation.updateMany({
+              where: { id: conversationId, title: "New conversation" },
               data: { title: lastUserMessage.slice(0, 60) },
             });
           }

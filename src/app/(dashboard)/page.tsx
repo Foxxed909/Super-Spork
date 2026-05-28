@@ -28,6 +28,7 @@ export default function HomePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [input, setInput] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/user")
@@ -39,14 +40,25 @@ export default function HomePage() {
   const handleSend = async () => {
     if (!input.trim() || isCreating) return;
     setIsCreating(true);
+    setCreateError(null);
 
-    const res = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: selectedModel }),
-    });
-    const conv = await res.json();
-    router.push(`/chat/${conv.id}?q=${encodeURIComponent(input.trim())}`);
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: selectedModel }),
+      });
+      if (!res.ok) {
+        setCreateError("Failed to create conversation. Please try again.");
+        return;
+      }
+      const conv = await res.json();
+      router.push(`/chat/${conv.id}?q=${encodeURIComponent(input.trim())}`);
+    } catch {
+      setCreateError("Network error. Please try again.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleSuggestion = (text: string) => {
@@ -102,6 +114,13 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* Create error */}
+      {createError && (
+        <div className="px-4 pt-2 max-w-3xl mx-auto w-full">
+          <p className="text-sm text-red-400 text-center">{createError}</p>
+        </div>
+      )}
 
       {/* Input */}
       {isAtLimit ? (

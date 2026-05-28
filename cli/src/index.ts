@@ -85,12 +85,40 @@ program
   .option("-m, --model <id>", "Model to use")
   .action(async (prompt: string, opts: { model?: string }) => {
     const config = loadConfig();
+    // Buffer full response, then detect + highlight code fences (Bug 10)
+    const chunks: string[] = [];
+    const origWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (s: string | Uint8Array, ...args: unknown[]): boolean => {
+      chunks.push(typeof s === "string" ? s : Buffer.from(s).toString());
+      return true;
+    };
     await chat({
       prompt: `You are an expert coding assistant. Respond with clean, working code and brief explanations.\n\n${prompt}`,
       model: opts.model ?? config.model ?? "openai/gpt-oss-120b:free",
       apiKey: config.apiKey,
       stream: true,
     });
+    process.stdout.write = origWrite;
+    const full = chunks.join("");
+    // Apply ANSI color to code fences using simple regex highlighting
+    const highlighted = full.replace(
+      /```(\w*)\n([\s\S]*?)```/g,
+      (_: string, lang: string, code: string) => {
+        const RESET = "\x1b[0m";
+        const GREEN = "\x1b[32m";
+        const CYAN = "\x1b[36m";
+        const YELLOW = "\x1b[33m";
+        const BLUE = "\x1b[34m";
+        // Simple keyword highlighting for common languages
+        let out = code
+          .replace(/\b(const|let|var|function|class|return|if|else|for|while|import|export|from|async|await|new|typeof|instanceof)\b/g, `${BLUE}$1${RESET}`)
+          .replace(/\b(true|false|null|undefined|void)\b/g, `${YELLOW}$1${RESET}`)
+          .replace(/(["'`])(?:(?!\1)[^\\]|\\.)*\1/g, `${GREEN}$&${RESET}`)
+          .replace(/(\/\/[^\n]*)/g, `${CYAN}$1${RESET}`);
+        return `\`\`\`${lang}\n${out}\`\`\``;
+      }
+    );
+    process.stdout.write(highlighted);
   });
 
 program

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, RefreshCw, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Message } from "ai";
@@ -12,9 +12,11 @@ import type { Message } from "ai";
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
+  sendError?: string | null;
+  onRetry?: () => void;
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, sendError, onRetry }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,6 +51,21 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
           <div className="flex-1 pt-1">
             <div className="streaming-cursor text-[#888] text-sm" />
           </div>
+        </div>
+      )}
+      {sendError && !isLoading && (
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <AlertCircle size={14} className="text-red-400 shrink-0" />
+          <p className="text-sm text-red-400 flex-1">{sendError}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors font-medium shrink-0"
+            >
+              <RefreshCw size={12} />
+              Retry
+            </button>
+          )}
         </div>
       )}
       <div ref={bottomRef} />

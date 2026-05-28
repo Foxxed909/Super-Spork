@@ -12,13 +12,16 @@ export async function GET(req: NextRequest) {
       ? [{ likes: "desc" as const }, { views: "desc" as const }]
       : [{ updatedAt: "desc" as const }];
 
+  // Validate cursor format (cuid: lowercase alphanumeric)
+  const safeCursor = cursor && /^[a-z0-9]+$/i.test(cursor) ? cursor : undefined;
+
   let conversations;
   try {
     conversations = await db.conversation.findMany({
       where: { isPublic: true },
       orderBy,
       take,
-      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      ...(safeCursor ? { skip: 1, cursor: { id: safeCursor } } : {}),
       select: {
         id: true,
         title: true,
@@ -32,7 +35,7 @@ export async function GET(req: NextRequest) {
           orderBy: { createdAt: "asc" },
           select: { content: true, role: true },
         },
-        user: { select: { email: true, username: true } },
+        user: { select: { username: true, displayName: true, avatarUrl: true, isVerified: true } },
       },
     });
   } catch {

@@ -20,6 +20,7 @@ import {
   Mic,
   Brain,
   Store,
+  Pin,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -28,6 +29,8 @@ interface Conversation {
   title: string;
   model: string;
   updatedAt: string;
+  pinned?: boolean;
+  pinnedAt?: string | null;
 }
 
 interface UserData {
@@ -43,20 +46,27 @@ export function Sidebar() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState(false);
+
+  const fetchSidebarData = () => {
+    setLoadError(false);
+    Promise.all([
+      fetch("/api/conversations").then((r) => r.json()),
+      fetch("/api/user").then((r) => r.json()),
+    ])
+      .then(([convs, user]) => {
+        setConversations(convs);
+        setUserData(user);
+      })
+      .catch(() => setLoadError(true));
+  };
 
   useEffect(() => {
-    fetch("/api/conversations")
-      .then((r) => r.json())
-      .then(setConversations)
-      .catch(() => {});
-
-    fetch("/api/user")
-      .then((r) => r.json())
-      .then(setUserData)
-      .catch(() => {});
+    fetchSidebarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  const handleNewChat = async () => {
+  const startChat = async () => {
     const res = await fetch("/api/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -74,7 +84,103 @@ export function Sidebar() {
     if (pathname === `/chat/${id}`) router.push("/");
   };
 
+  const handlePin = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const conv = conversations.find((c) => c.id === id);
+    if (!conv) return;
+    const newPinned = !conv.pinned;
+    // Optimistic update
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, pinned: newPinned, pinnedAt: newPinned ? new Date().toISOString() : null }
+          : c
+      )
+    );
+    try {
+      await fetch(`/api/conversations/${id}/pin`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned: newPinned }),
+      });
+    } catch {
+      // Revert on failure
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, pinned: conv.pinned, pinnedAt: conv.pinnedAt } : c
+        )
+      );
+    }
+  };
+
   const isSuperSpork = userData?.tier === "SUPER_SPORK";
+
+  const filtered = conversations.filter((c) =>
+    search.trim() ? c.title.toLowerCase().includes(search.toLowerCase()) : true
+  );
+
+  const pinned = filtered
+    .filter((c) => c.pinned)
+    .sort((a, b) => {
+      if (a.pinnedAt && b.pinnedAt) return new Date(b.pinnedAt).getTime() - new Date(a.pinnedAt).getTime();
+      return 0;
+    });
+
+  const unpinned = filtered
+    .filter((c) => !c.pinned)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  const renderConvLink = (conv: Conversation) => {
+    const isActive = pathname === `/chat/${conv.id}`;
+    return (
+      <Link
+        key={conv.id}
+        href={`/chat/${conv.id}`}
+        className={cn(
+          "group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
+          isActive
+            ? "bg-[#1e1e1e] text-white"
+            : "text-[#aaa] hover:bg-[#1a1a1a] hover:text-white"
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {conv.pinned && (
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+          )}
+          {!conv.pinned && (
+            <MessageSquare size={14} className="shrink-0 text-[#555]" />
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium leading-tight">
+              {conv.title}
+            </p>
+            <p className="text-xs text-[#555] mt-0.5">
+              {formatDate(conv.updatedAt)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+          <button
+            onClick={(e) => handlePin(e, conv.id)}
+            className={cn(
+              "p-1 rounded text-[#555] hover:text-purple-400 transition-all",
+              conv.pinned && "text-purple-400"
+            )}
+            title={conv.pinned ? "Unpin" : "Pin"}
+          >
+            <Pin size={11} />
+          </button>
+          <button
+            onClick={(e) => handleDelete(e, conv.id)}
+            className="p-1 rounded text-[#555] hover:text-red-400 transition-all"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      </Link>
+    );
+  };
 
   return (
     <aside
@@ -113,7 +219,7 @@ export function Sidebar() {
       {/* New Chat */}
       <div className="p-2">
         <button
-          onClick={handleNewChat}
+          onClick={startChat}
           className={cn(
             "flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm font-medium",
             "bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20",
@@ -145,50 +251,37 @@ export function Sidebar() {
             </div>
           )}
           <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
-          {conversations.length === 0 ? (
+          {loadError ? (
+            <div className="px-3 py-4 text-center">
+              <p className="text-xs text-[#555] mb-2">Couldn&apos;t load</p>
+              <button
+                onClick={fetchSidebarData}
+                className="text-xs text-[#a78bfa] hover:text-[#c4b5fd] transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : conversations.length === 0 ? (
             <p className="px-3 py-4 text-xs text-[#555] text-center">
               No conversations yet
             </p>
           ) : (
-            conversations
-              .filter((c) =>
-                search.trim()
-                  ? c.title.toLowerCase().includes(search.toLowerCase())
-                  : true
-              )
-              .map((conv) => {
-              const isActive = pathname === `/chat/${conv.id}`;
-              return (
-                <Link
-                  key={conv.id}
-                  href={`/chat/${conv.id}`}
-                  className={cn(
-                    "group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
-                    isActive
-                      ? "bg-[#1e1e1e] text-white"
-                      : "text-[#aaa] hover:bg-[#1a1a1a] hover:text-white"
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MessageSquare size={14} className="shrink-0 text-[#555]" />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium leading-tight">
-                        {conv.title}
-                      </p>
-                      <p className="text-xs text-[#555] mt-0.5">
-                        {formatDate(conv.updatedAt)}
-                      </p>
-                    </div>
+            <>
+              {pinned.length > 0 && (
+                <>
+                  <div className="px-3 pt-2 pb-1">
+                    <span className="text-[10px] font-semibold text-purple-400 uppercase tracking-wider">Pinned</span>
                   </div>
-                  <button
-                    onClick={(e) => handleDelete(e, conv.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#555] hover:text-red-400 transition-all"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </Link>
-              );
-            })
+                  {pinned.map(renderConvLink)}
+                  {unpinned.length > 0 && (
+                    <div className="px-3 pt-2 pb-1 border-t border-[#2a2a2a] mt-1">
+                      <span className="text-[10px] font-semibold text-[#555] uppercase tracking-wider">Conversations</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {unpinned.map(renderConvLink)}
+            </>
           )}
           </div>
         </div>

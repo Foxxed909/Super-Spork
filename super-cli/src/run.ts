@@ -161,8 +161,9 @@ ${dryRun ? "## MODE: DRY RUN — Only produce the PLAN. Do NOT output file chang
       const [, filePath, content] = match;
       const absolutePath = path.resolve(cwd, filePath);
 
-      // Safety: only allow changes within the current working directory
-      if (!absolutePath.startsWith(cwd)) {
+      // Safety: only allow changes within the current working directory (Bug 12: ensure trailing sep)
+      const cwdSafe = cwd.endsWith(path.sep) ? cwd : cwd + path.sep;
+      if (!absolutePath.startsWith(cwdSafe)) {
         console.error(`\nBlocked: ${filePath} is outside project root`);
         continue;
       }

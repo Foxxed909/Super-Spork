@@ -56,6 +56,16 @@ export async function chat(opts: ChatOptions): Promise<void> {
         },
       },
       (res) => {
+        // Bug 11: check HTTP status before parsing stream
+        if (res.statusCode && res.statusCode >= 400) {
+          let errBody = "";
+          res.on("data", (c: Buffer) => { errBody += c.toString(); });
+          res.on("end", () => {
+            console.error(`Error ${res.statusCode}: ${errBody.trim() || "Request failed"}`);
+            process.exit(1);
+          });
+          return;
+        }
         if (stream) {
           let buffer = "";
           res.on("data", (chunk: Buffer) => {

@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
   }
 
   const original = await db.conversation.findFirst({
-    where: { id: conversationId, userId: user.id },
+    where: {
+      id: conversationId,
+      OR: [{ userId: user.id }, { isPublic: true }],
+    },
     include: { messages: { orderBy: { createdAt: "asc" } } },
   });
   if (!original) return new NextResponse("Not found", { status: 404 });

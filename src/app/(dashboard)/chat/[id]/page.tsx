@@ -38,6 +38,7 @@ export default function ChatPage() {
   const [loaded, setLoaded] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [convTitle, setConvTitle] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
   const sentFirstRef = useRef(false);
 
   useEffect(() => {
@@ -66,10 +67,13 @@ export default function ChatPage() {
       .catch(() => setLoaded(true));
   }, [id]);
 
-  const { messages, input, setInput, append, isLoading, stop } = useChat({
+  const { messages, input, setInput, append, isLoading, stop, reload } = useChat({
     api: "/api/chat",
     body: { model: selectedModel, conversationId: id, agentId: selectedAgent },
     initialMessages,
+    onError: (err) => {
+      setSendError(err.message || "Something went wrong. Try again.");
+    },
   });
 
   // Auto-send ?q= first message after conversation loads
@@ -109,8 +113,14 @@ export default function ChatPage() {
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
+    setSendError(null);
     append({ role: "user", content: input });
     setInput("");
+  };
+
+  const handleRetry = () => {
+    setSendError(null);
+    reload();
   };
 
   const isAtLimit =
@@ -173,7 +183,7 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
-        <MessageList messages={messages} isLoading={isLoading} />
+        <MessageList messages={messages} isLoading={isLoading} sendError={sendError} onRetry={handleRetry} />
       </div>
 
       {/* Input */}

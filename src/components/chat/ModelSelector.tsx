@@ -16,12 +16,12 @@ export function ModelSelector({ value, onChange, userTier }: ModelSelectorProps)
   const ref = useRef<HTMLDivElement>(null);
 
   const isSuperSpork = userTier === "SUPER_SPORK";
-  const allModels = isSuperSpork
+  const availableModels = isSuperSpork
     ? [...FREE_MODELS, ...PAID_MODELS]
     : FREE_MODELS;
 
   const currentModel =
-    allModels.find((m) => m.id === value) ?? FREE_MODELS[0];
+    availableModels.find((m) => m.id === value) ?? FREE_MODELS[0];
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

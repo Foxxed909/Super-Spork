@@ -18,6 +18,7 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
   const activeAgent = AGENTS.find((a) => a.id === value);
 
   useEffect(() => {
+    if (!open) return;
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
@@ -25,7 +26,7 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [open]);
 
   const freeAgents = AGENTS.filter((a) => a.tier === "free");
   const paidAgents = AGENTS.filter((a) => a.tier === "paid");

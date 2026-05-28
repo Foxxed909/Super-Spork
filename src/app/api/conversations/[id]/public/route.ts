@@ -14,12 +14,7 @@ export async function GET(
   });
   if (!conversation) return new NextResponse("Not found", { status: 404 });
 
-  // Increment view count (fire-and-forget)
-  db.conversation.update({
-    where: { id },
-    data: { views: { increment: 1 } },
-  }).catch(() => {});
-
+  // View increment lives only in the share page server component (Bug 5: prevents double count)
   return NextResponse.json(conversation);
 }
 

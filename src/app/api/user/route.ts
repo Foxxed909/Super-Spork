@@ -31,6 +31,10 @@ export async function PATCH(req: NextRequest) {
 
   const { customInstructions } = await req.json();
 
+  if (typeof customInstructions === "string" && customInstructions.length > 2000) {
+    return new NextResponse("customInstructions must be 2000 characters or fewer", { status: 400 });
+  }
+
   await db.user.update({
     where: { id: user.id },
     data: {

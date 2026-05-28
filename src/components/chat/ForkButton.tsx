@@ -22,6 +22,7 @@ export function ForkButton({ conversationId, userTier, onForked }: ForkButtonPro
       : FREE_MODELS;
 
   useEffect(() => {
+    if (!open) return;
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
@@ -29,7 +30,7 @@ export function ForkButton({ conversationId, userTier, onForked }: ForkButtonPro
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [open]);
 
   const handleFork = async (newModel: string) => {
     setForking(true);
@@ -40,8 +41,11 @@ export function ForkButton({ conversationId, userTier, onForked }: ForkButtonPro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, newModel }),
       });
+      if (!res.ok) throw new Error("Fork failed");
       const data = await res.json();
       if (data.id) onForked(data.id);
+    } catch (err) {
+      console.error("Fork error:", err);
     } finally {
       setForking(false);
     }

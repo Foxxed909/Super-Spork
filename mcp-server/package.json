@@ -1,0 +1,25 @@
+{
+  "name": "@spork/mcp",
+  "version": "1.0.0",
+  "description": "MCP server that wraps Spork AI capabilities as callable tools for Claude Code, Gemini CLI, and any MCP-compatible assistant",
+  "main": "dist/server.js",
+  "bin": {
+    "@spork/mcp": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts"
+  },
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
