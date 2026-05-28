@@ -45,7 +45,7 @@ export function AgentCard({ agent, userTier, onSelect }: AgentCardProps) {
 
       {/* Emoji + color accent */}
       <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+        className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
         style={{ backgroundColor: `${agent.accentColor}20`, border: `1px solid ${agent.accentColor}40` }}
       >
         {agent.emoji}
@@ -59,7 +59,7 @@ export function AgentCard({ agent, userTier, onSelect }: AgentCardProps) {
       {!isLocked && (
         <button
           onClick={(e) => { e.stopPropagation(); onSelect(agent.id); }}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
           style={{
             backgroundColor: `${agent.accentColor}20`,
             color: agent.accentColor,

@@ -36,7 +36,7 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors",
+          "flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors",
           activeAgent
             ? "bg-[#1a1a1a] border-[#3a3a3a] text-white"
             : "bg-transparent border-[#2a2a2a] text-[#666] hover:text-[#aaa] hover:border-[#3a3a3a]"
@@ -62,7 +62,7 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-[#141414] border border-[#2a2a2a] rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 w-64 bg-[#141414] border border-[#2a2a2a] rounded-2xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
           <button
             onClick={() => { onChange(null); setOpen(false); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[#666] hover:bg-[#1e1e1e] hover:text-white transition-colors border-b border-[#2a2a2a]"

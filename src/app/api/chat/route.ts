@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { canUseModel, hasReachedDailyLimit, getSystemPrompt } from "@/lib/tier";
 import { BERRY_MODEL, BERRY_PRIMARY_MODEL, BERRY_FALLBACK_MODEL } from "@/lib/models";
 import { getAgent } from "@/lib/agents";
+import { hasClerkServerKeys } from "@/lib/clerk-server";
+import { getOrCreateUser } from "@/lib/user";
 
 // Resolve Berry-alpha1937 virtual model to its actual OpenRouter backend
 function resolveModel(model: string, agentId?: string): string {
@@ -29,6 +31,10 @@ function makeOpenRouter(apiKey: string) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!hasClerkServerKeys()) {
+    return new Response("Clerk is not configured for this local run", { status: 503 });
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
@@ -57,8 +63,11 @@ export async function POST(req: NextRequest) {
   let user;
   try {
     user = await db.$transaction(async (tx) => {
-      const u = await tx.user.findUnique({ where: { clerkId: userId } });
-      if (!u) throw new Error("user_not_found");
+      const u = await tx.user.upsert({
+        where: { clerkId: userId },
+        update: {},
+        create: { clerkId: userId, email: `${userId}@clerk.local` },
+      });
       if (!canUseModel(u.tier, model)) throw new Error("model_forbidden");
       if (hasReachedDailyLimit(u.tier, u.dailyMessages, u.lastReset))
         throw new Error("limit_reached");

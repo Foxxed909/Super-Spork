@@ -1,7 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { PostType } from "@prisma/client";
+import { getOrCreateUser } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 
 const VALID_POST_TYPES = new Set<string>(["TEXT", "CODE", "QUESTION", "SHOWCASE"]);
 
@@ -43,8 +44,7 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   let body: { content?: unknown; type?: unknown; conversationId?: unknown; tags?: unknown };
   try {
@@ -92,4 +92,3 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(post, { status: 201 });
-}

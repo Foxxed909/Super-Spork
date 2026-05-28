@@ -120,14 +120,14 @@ export default function HubPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-lg border border-[#2a2a2a] w-fit mb-6">
+      <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-full border border-[#2a2a2a] w-fit mb-6">
         {([["prompts", "Trending Prompts"], ["saved", "My Prompts"]] as const).map(
           ([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-sm transition-colors",
+                "px-3 py-1.5 rounded-full text-sm transition-colors",
                 tab === id
                   ? "bg-[#2a2a2a] text-white font-medium"
                   : "text-[#666] hover:text-[#aaa]"
@@ -146,7 +146,7 @@ export default function HubPage() {
       ) : tab === "prompts" ? (
         <div className="space-y-3">
           {/* Search bar */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-[#2a2a2a] rounded-xl">
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-[#2a2a2a] rounded-2xl">
             <Search size={13} className="text-[#555] shrink-0" />
             <input
               type="text"
@@ -202,7 +202,7 @@ export default function HubPage() {
                     <span className="text-[10px] text-[#444]">@{handle}</span>
                     <button
                       onClick={() => handleUsePrompt(p)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#a78bfa]/10 text-[#a78bfa] text-xs rounded-lg hover:bg-[#a78bfa]/20 transition-colors font-medium"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#a78bfa]/10 text-[#a78bfa] text-xs rounded-full hover:bg-[#a78bfa]/20 transition-colors font-medium"
                     >
                       <Zap size={11} />
                       Try this
@@ -218,7 +218,7 @@ export default function HubPage() {
           {/* Add prompt button */}
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 rounded-xl text-sm font-medium hover:bg-[#a78bfa]/20 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 rounded-2xl text-sm font-medium hover:bg-[#a78bfa]/20 transition-colors"
           >
             <Plus size={14} />
             Save a prompt
@@ -234,14 +234,14 @@ export default function HubPage() {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="Prompt title"
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a]"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a]"
               />
               <textarea
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
                 placeholder="The prompt content..."
                 rows={3}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none resize-none focus:border-[#3a3a3a]"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none resize-none focus:border-[#3a3a3a]"
               />
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-xs text-[#666] cursor-pointer">
@@ -264,7 +264,7 @@ export default function HubPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-3 py-1.5 bg-[#a78bfa] text-white text-xs rounded-lg hover:bg-[#9061f9] transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 bg-[#a78bfa] text-white text-xs rounded-full hover:bg-[#9061f9] transition-colors disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save"}
                   </button>

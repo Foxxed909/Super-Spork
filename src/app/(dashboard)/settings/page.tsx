@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { UserProfile } from "@clerk/nextjs";
 import { Sparkles, CheckCircle2, Save, Brain, Trash2, Key, Copy, X, Plus, Eye, EyeOff } from "lucide-react";
 import { FREE_DAILY_LIMIT, FREE_MODELS, PAID_MODELS } from "@/lib/models";
+import { hasClerkPublishableKey } from "@/lib/clerk-public";
 
 type Tier = "FREE" | "SPORK_LITE" | "SPORK_PRO" | "SUPER_SPORK" | "SPORK_ULTRA" | "SPORK_INFINITY" | "SPORK_GODMODE";
 
@@ -92,6 +93,7 @@ const TIERS: Array<{
 ];
 
 export default function SettingsPage() {
+  const clerkEnabled = hasClerkPublishableKey();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [upgrading, setUpgrading] = useState<Tier | null>(null);
   const [instructions, setInstructions] = useState("");
@@ -114,9 +116,11 @@ export default function SettingsPage() {
       })
       .catch(() => {});
 
-    fetch("/api/memory").then((r) => r.json()).then(setMemories).catch(() => {});
-    fetch("/api/tokens").then((r) => r.json()).then(setTokens).catch(() => {});
-  }, []);
+    if (clerkEnabled) {
+      fetch("/api/memory").then((r) => r.json()).then(setMemories).catch(() => {});
+      fetch("/api/tokens").then((r) => r.json()).then(setTokens).catch(() => {});
+    }
+  }, [clerkEnabled]);
 
   const handleSaveInstructions = async () => {
     if (instructions.length > 2000) return;
@@ -244,7 +248,7 @@ export default function SettingsPage() {
                   <button
                     onClick={() => handleUpgrade(tier.id)}
                     disabled={upgrading === tier.id}
-                    className="w-full py-1.5 text-white text-xs font-semibold rounded-xl transition-opacity disabled:opacity-50"
+                    className="w-full py-1.5 text-white text-xs font-semibold rounded-2xl transition-opacity disabled:opacity-50"
                     style={{ background: `linear-gradient(135deg, ${tier.color}, ${tier.color}bb)` }}
                   >
                     {upgrading === tier.id ? "Redirecting…" : `Upgrade to ${tier.name}`}
@@ -266,7 +270,7 @@ export default function SettingsPage() {
           maxLength={2000}
           placeholder="e.g. I'm a senior TypeScript developer. Prefer concise answers. Always use functional React patterns."
           rows={4}
-          className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-[#f0f0f0] placeholder-[#444] resize-none outline-none focus:border-[#3a3a3a] transition-colors"
+          className="w-full bg-[#111] border border-[#2a2a2a] rounded-2xl px-4 py-3 text-sm text-[#f0f0f0] placeholder-[#444] resize-none outline-none focus:border-[#3a3a3a] transition-colors"
         />
         <div className="flex justify-between items-center mt-1">
           <span className={`text-xs ${instructions.length > 1800 ? "text-red-400" : "text-[#555]"}`}>
@@ -275,7 +279,7 @@ export default function SettingsPage() {
           <button
             onClick={handleSaveInstructions}
             disabled={saving || instructions.length > 2000}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] hover:bg-[#9061f9] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] hover:bg-[#9061f9] text-white text-sm font-semibold rounded-2xl transition-colors disabled:opacity-50"
           >
             <Save size={13} />
             {saved ? "Saved!" : saving ? "Saving…" : "Save"}
@@ -310,12 +314,12 @@ export default function SettingsPage() {
               onChange={(e) => setNewTokenLabel(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleCreateToken(); }}
               placeholder="e.g. Chrome Extension, Claude Code MCP"
-              className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a]"
+              className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-2xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a]"
             />
             <button
               onClick={handleCreateToken}
               disabled={creatingToken || !newTokenLabel.trim()}
-              className="px-3 py-2 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 rounded-xl text-sm hover:bg-[#a78bfa]/20 transition-colors disabled:opacity-50"
+              className="px-3 py-2 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 rounded-2xl text-sm hover:bg-[#a78bfa]/20 transition-colors disabled:opacity-50"
             >
               {creatingToken ? "Creating…" : "Create"}
             </button>
@@ -323,7 +327,7 @@ export default function SettingsPage() {
         )}
 
         {revealedToken && (
-          <div className="mb-3 p-3 bg-green-900/20 border border-green-500/30 rounded-xl">
+          <div className="mb-3 p-3 bg-green-900/20 border border-green-500/30 rounded-2xl">
             <p className="text-xs text-green-400 font-semibold mb-1">Token created — copy it now, it won&apos;t be shown again:</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-xs text-green-300 break-all font-mono">{revealedToken}</code>
@@ -345,7 +349,7 @@ export default function SettingsPage() {
         ) : (
           <div className="space-y-2">
             {tokens.map((t) => (
-              <div key={t.id} className="flex items-center justify-between gap-2 bg-[#111] border border-[#2a2a2a] rounded-xl px-3 py-2 group">
+              <div key={t.id} className="flex items-center justify-between gap-2 bg-[#111] border border-[#2a2a2a] rounded-2xl px-3 py-2 group">
                 <div>
                   <p className="text-sm text-[#ccc] font-medium">{t.label}</p>
                   <p className="text-xs text-[#555]">
@@ -381,11 +385,11 @@ export default function SettingsPage() {
               onChange={(e) => setNewMemory(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddMemory(); } }}
               placeholder="I prefer TypeScript over JavaScript…"
-              className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a]"
+              className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-2xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a]"
             />
             <button
               onClick={handleAddMemory}
-              className="px-3 py-2 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 rounded-xl text-sm hover:bg-[#a78bfa]/20 transition-colors"
+              className="px-3 py-2 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 rounded-2xl text-sm hover:bg-[#a78bfa]/20 transition-colors"
             >
               Add
             </button>
@@ -395,7 +399,7 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-2">
               {memories.map((m) => (
-                <div key={m.id} className="flex items-start justify-between gap-2 bg-[#111] border border-[#2a2a2a] rounded-xl px-3 py-2 group">
+                <div key={m.id} className="flex items-start justify-between gap-2 bg-[#111] border border-[#2a2a2a] rounded-2xl px-3 py-2 group">
                   <p className="text-sm text-[#ccc] leading-relaxed">{m.content}</p>
                   <button
                     onClick={() => handleDeleteMemory(m.id)}
@@ -413,20 +417,28 @@ export default function SettingsPage() {
       {/* Clerk profile */}
       <div>
         <h2 className="text-sm font-semibold text-[#666] uppercase tracking-wider mb-3">Account</h2>
-        <UserProfile
-          appearance={{
-            variables: {
-              colorPrimary: "#a78bfa",
-              colorBackground: "#111111",
-              colorInputBackground: "#1a1a1a",
-              colorInputText: "#f0f0f0",
-              colorText: "#f0f0f0",
-              colorTextSecondary: "#888888",
-              borderRadius: "12px",
-            },
-            elements: { card: "shadow-none border-0", rootBox: "w-full" },
-          }}
-        />
+        {clerkEnabled ? (
+          <UserProfile
+            appearance={{
+              variables: {
+                colorPrimary: "#a78bfa",
+                colorBackground: "#111111",
+                colorInputBackground: "#1a1a1a",
+                colorInputText: "#f0f0f0",
+                colorText: "#f0f0f0",
+                colorTextSecondary: "#888888",
+                borderRadius: "12px",
+              },
+              elements: { card: "shadow-none border-0", rootBox: "w-full" },
+            }}
+          />
+        ) : (
+          <div className="rounded-2xl border border-[#2a2a2a] bg-[#111] p-4">
+            <p className="text-sm text-[#888]">
+              Clerk keys are not configured. Add them to `.env.local` to enable account management.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

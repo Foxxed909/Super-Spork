@@ -54,7 +54,7 @@ export function MessageList({ messages, isLoading, sendError, onRetry }: Message
         </div>
       )}
       {sendError && !isLoading && (
-        <div className="flex items-center gap-3 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-2xl">
           <AlertCircle size={14} className="text-red-400 shrink-0" />
           <p className="text-sm text-red-400 flex-1">{sendError}</p>
           {onRetry && (
@@ -83,8 +83,8 @@ function MessageBubble({ message }: { message: Message }) {
         className={cn(
           "w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold",
           isUser
-            ? "bg-[#2a2a2a] text-[#888]"
-            : "bg-[#a78bfa]/20 border border-[#a78bfa]/30 text-[#a78bfa]"
+            ? "bg-[#222] text-[#666]"
+            : "bg-[#a78bfa]/15 border border-[#a78bfa]/25 text-[#a78bfa]"
         )}
       >
         {isUser ? "U" : "S"}
@@ -98,7 +98,7 @@ function MessageBubble({ message }: { message: Message }) {
         )}
       >
         {isUser ? (
-          <div className="inline-block max-w-[85%] bg-[#1e1e1e] border border-[#2a2a2a] rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm text-[#e0e0e0]">
+          <div className="inline-block max-w-[85%] bg-[#1a1a2a] border border-[#2a2a3e] rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm text-[#ddd]">
             {message.content as string}
           </div>
         ) : (
@@ -141,7 +141,7 @@ function CodeBlock({ children, ...props }: React.HTMLAttributes<HTMLPreElement>)
       </pre>
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 p-1.5 rounded-md bg-[#2a2a2a] text-[#888] hover:text-white opacity-0 group-hover/code:opacity-100 transition-all"
+        className="absolute top-2 right-2 p-1.5 rounded-full bg-[#2a2a2a] text-[#888] hover:text-white opacity-0 group-hover/code:opacity-100 transition-all"
       >
         {copied ? <Check size={12} /> : <Copy size={12} />}
       </button>

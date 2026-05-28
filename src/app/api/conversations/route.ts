@@ -3,15 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { canUseModel } from "@/lib/tier";
 import { ALL_MODELS } from "@/lib/models";
+import { hasClerkServerKeys } from "@/lib/clerk-server";
+import { getOrCreateUser } from "@/lib/user";
 
 const VALID_MODEL_IDS = new Set(ALL_MODELS.map((m) => m.id));
 
 export async function GET() {
+  if (!hasClerkServerKeys()) {
+    return NextResponse.json([]);
+  }
+
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const conversations = await db.conversation.findMany({
     where: { userId: user.id },
@@ -24,11 +29,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!hasClerkServerKeys()) {
+    return new NextResponse("Clerk is not configured for this local run", { status: 503 });
+  }
+
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   let body: { model?: unknown; agentId?: unknown };
   try {

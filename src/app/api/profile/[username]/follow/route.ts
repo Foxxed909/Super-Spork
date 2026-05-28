@@ -1,6 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { getOrCreateUser } from "@/lib/user";
 
 export async function POST(
   _req: NextRequest,
@@ -12,10 +13,9 @@ export async function POST(
   const { username } = await params;
 
   const [me, target] = await Promise.all([
-    db.user.findUnique({ where: { clerkId: userId }, select: { id: true } }),
+    getOrCreateUser(userId),
     db.user.findUnique({ where: { username }, select: { id: true } }),
   ]);
-  if (!me) return new NextResponse("User not found", { status: 404 });
   if (!target) return new NextResponse("Target not found", { status: 404 });
   if (me.id === target.id) return new NextResponse("Cannot follow yourself", { status: 400 });
 
@@ -38,10 +38,10 @@ export async function DELETE(
   const { username } = await params;
 
   const [me, target] = await Promise.all([
-    db.user.findUnique({ where: { clerkId: userId }, select: { id: true } }),
+    getOrCreateUser(userId),
     db.user.findUnique({ where: { username }, select: { id: true } }),
   ]);
-  if (!me || !target) return new NextResponse("Not found", { status: 404 });
+  if (!target) return new NextResponse("Not found", { status: 404 });
 
   await db.follow.deleteMany({
     where: { followerId: me.id, followingId: target.id },

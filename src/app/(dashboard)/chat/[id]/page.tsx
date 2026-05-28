@@ -155,14 +155,14 @@ export default function ChatPage() {
               <button
                 onClick={handleExport}
                 title="Export as Markdown"
-                className="p-1.5 rounded-lg text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                className="p-1.5 rounded-full text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors"
               >
                 <Download size={15} />
               </button>
               <button
                 onClick={handleTogglePublic}
                 title={isPublic ? "Remove from feed" : "Share to feed"}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors ${
                   isPublic
                     ? "text-[#a78bfa] bg-[#a78bfa]/10 hover:bg-[#a78bfa]/20"
                     : "text-[#555] hover:text-white hover:bg-[#1a1a1a]"
@@ -195,7 +195,7 @@ export default function ChatPage() {
             </p>
             <a
               href="/settings"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] text-white rounded-lg text-sm font-semibold hover:bg-[#9061f9] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] text-white rounded-full text-sm font-semibold hover:bg-[#9061f9] transition-colors"
             >
               <Sparkles size={14} />
               Upgrade to Super Spork

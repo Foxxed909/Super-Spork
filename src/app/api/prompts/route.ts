@@ -1,6 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getOrCreateUser } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,8 +10,7 @@ export async function GET(req: NextRequest) {
   if (scope === "mine") {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
-    const user = await db.user.findUnique({ where: { clerkId: userId } });
-    if (!user) return new NextResponse("User not found", { status: 404 });
+    const user = await getOrCreateUser(userId);
 
     const prompts = await db.savedPrompt.findMany({
       where: { userId: user.id },
@@ -34,8 +34,7 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const { title, content, isPublic } = await req.json();
   if (
@@ -64,10 +63,8 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
   if (typeof id !== "string") return new NextResponse("Missing id", { status: 400 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   await db.savedPrompt.deleteMany({ where: { id, userId: user.id } });
 
   return new NextResponse(null, { status: 204 });
-}

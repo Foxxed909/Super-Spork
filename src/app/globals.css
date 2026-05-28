@@ -2,14 +2,14 @@
 @import "highlight.js/styles/github-dark.css";
 
 :root {
-  --background: #0a0a0a;
-  --surface: #111111;
-  --surface-raised: #1a1a1a;
-  --border: #2a2a2a;
-  --foreground: #f0f0f0;
-  --muted: #888888;
+  --background: #0d0d0d;
+  --surface: #141414;
+  --surface-raised: #1c1c1c;
+  --border: #272727;
+  --foreground: #efefef;
+  --muted: #777777;
   --accent: #a78bfa;
-  --accent-glow: rgba(167, 139, 250, 0.15);
+  --accent-glow: rgba(167, 139, 250, 0.12);
 }
 
 @theme inline {

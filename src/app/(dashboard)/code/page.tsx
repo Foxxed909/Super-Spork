@@ -59,7 +59,7 @@ export default function CodePage() {
         </div>
         <Link
           href="/settings"
-          className="px-6 py-2.5 bg-[#a78bfa] hover:bg-[#9061f9] text-white rounded-xl text-sm font-semibold transition-colors"
+          className="px-6 py-2.5 bg-[#a78bfa] hover:bg-[#9061f9] text-white rounded-2xl text-sm font-semibold transition-colors"
         >
           Upgrade to Super Spork
         </Link>
@@ -120,13 +120,13 @@ function ModeTabs({
   ];
 
   return (
-    <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-lg border border-[#2a2a2a]">
+    <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-full border border-[#2a2a2a]">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors",
             mode === tab.id
               ? "bg-[#2a2a2a] text-white font-medium"
               : "text-[#666] hover:text-[#aaa]"

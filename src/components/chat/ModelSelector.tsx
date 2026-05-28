@@ -37,7 +37,7 @@ export function ModelSelector({ value, onChange, userTier }: ModelSelectorProps)
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white hover:border-[#3a3a3a] transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white hover:border-[#3a3a3a] transition-colors"
       >
         <span className="font-medium">{currentModel.name}</span>
         <span className="text-[10px] text-[#666] bg-[#222] px-1.5 py-0.5 rounded">
@@ -47,7 +47,7 @@ export function ModelSelector({ value, onChange, userTier }: ModelSelectorProps)
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-[#141414] border border-[#2a2a2a] rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 w-72 bg-[#141414] border border-[#2a2a2a] rounded-2xl shadow-xl z-50 overflow-hidden">
           {FREE_MODELS.length > 0 && (
             <ModelGroup
               label="Free Models"
@@ -137,7 +137,7 @@ function ModelGroup({
 
 export function LockedModelSelector() {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-[#666] cursor-not-allowed">
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-[#666] cursor-not-allowed">
       <Lock size={12} />
       <span>Unlock models with Super Spork</span>
     </div>

@@ -1,6 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getOrCreateUser } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(
   _req: NextRequest,
@@ -11,8 +12,7 @@ export async function POST(
 
   const { id } = await params;
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const prompt = await db.savedPrompt.findUnique({ where: { id } });
   if (!prompt) return new NextResponse("Not found", { status: 404 });
@@ -30,4 +30,3 @@ export async function POST(
     .catch(() => {});
 
   return new NextResponse(null, { status: 204 });
-}

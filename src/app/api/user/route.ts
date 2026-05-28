@@ -2,13 +2,23 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { FREE_DAILY_LIMIT } from "@/lib/models";
+import { hasClerkServerKeys } from "@/lib/clerk-server";
+import { getOrCreateUser } from "@/lib/user";
 
 export async function GET() {
+  if (!hasClerkServerKeys()) {
+    return NextResponse.json({
+      tier: "FREE",
+      dailyMessages: 0,
+      dailyLimit: FREE_DAILY_LIMIT,
+      customInstructions: "",
+    });
+  }
+
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const now = new Date();
   const isNewDay = now.toDateString() !== new Date(user.lastReset).toDateString();
@@ -23,11 +33,14 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!hasClerkServerKeys()) {
+    return new NextResponse("Clerk is not configured for this local run", { status: 503 });
+  }
+
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const { customInstructions } = await req.json();
 

@@ -1,7 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { canUseModel } from "@/lib/tier";
+import { getOrCreateUser } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -15,8 +16,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Missing fields", { status: 400 });
   }
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   if (!canUseModel(user.tier, newModel)) {
     return new NextResponse("Model requires Super Spork upgrade", { status: 403 });
@@ -48,4 +48,3 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(forked);
-}

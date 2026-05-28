@@ -1,6 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getOrCreateUser } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(
   _req: NextRequest,
@@ -26,8 +27,7 @@ export async function PATCH(
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
   const { id } = await params;
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const conversation = await db.conversation.findFirst({
     where: { id, userId: user.id },
@@ -42,4 +42,3 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}

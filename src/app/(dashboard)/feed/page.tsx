@@ -66,13 +66,13 @@ export default function FeedPage() {
           <p className="text-sm text-[#666] mt-1">Public conversations from the Spork community</p>
         </div>
 
-        <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-lg border border-[#2a2a2a]">
+        <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-full border border-[#2a2a2a]">
           {(["new", "top"] as Filter[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-sm capitalize transition-colors",
+                "px-3 py-1.5 rounded-full text-sm capitalize transition-colors",
                 filter === f
                   ? "bg-[#2a2a2a] text-white font-medium"
                   : "text-[#666] hover:text-[#aaa]"
@@ -162,7 +162,7 @@ export default function FeedPage() {
           {hasMore && !loading && (
             <button
               onClick={() => loadFeed(filter, cursor, true)}
-              className="w-full py-3 text-sm text-[#666] hover:text-white transition-colors border border-[#2a2a2a] rounded-xl"
+              className="w-full py-3 text-sm text-[#666] hover:text-white transition-colors border border-[#2a2a2a] rounded-2xl"
             >
               Load more
             </button>

@@ -1,6 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getOrCreateUser } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function DELETE(
   _req: NextRequest,
@@ -9,8 +10,7 @@ export async function DELETE(
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return new NextResponse("User not found", { status: 404 });
+  const user = await getOrCreateUser(userId);
 
   const { id } = await params;
 
@@ -25,4 +25,3 @@ export async function DELETE(
   });
 
   return new NextResponse(null, { status: 204 });
-}

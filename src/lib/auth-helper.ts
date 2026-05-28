@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { createHash } from "crypto";
+import { hasClerkServerKeys } from "@/lib/clerk-server";
 
 function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
@@ -9,8 +10,10 @@ function sha256(input: string): string {
 
 export async function resolveUser(req: NextRequest) {
   // 1. Clerk session (web UI)
-  const { userId } = await auth();
-  if (userId) return db.user.findUnique({ where: { clerkId: userId } });
+  if (hasClerkServerKeys()) {
+    const { userId } = await auth();
+    if (userId) return db.user.findUnique({ where: { clerkId: userId } });
+  }
 
   // 2. Bearer token (extension / CLI / MCP)
   const authHeader = req.headers.get("Authorization");

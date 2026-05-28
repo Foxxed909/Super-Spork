@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Super Spork — Dashboard Preview</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#080808;color:#efefef;height:100vh;display:flex;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:240px;background:#111;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0;position:relative;z-index:2}
+.sb-header{display:flex;align-items:center;justify-content:space-between;padding:14px 12px;border-bottom:1px solid #1e1e1e}
+.sb-logo{font-size:17px;font-weight:900;letter-spacing:-.3px;color:#fff}.sb-logo span{color:#a78bfa}
+.sb-icon{width:28px;height:28px;border-radius:8px;border:1px solid #272727;background:transparent;color:#555;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s}.sb-icon:hover{background:#1c1c1c;color:#fff}
+.sb-new{margin:10px 10px 6px;display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;background:#1c1c1c;border:1px solid #272727;color:#777;font-size:13px;font-weight:500;cursor:pointer;transition:all .12s}.sb-new:hover{background:#232323;color:#fff}
+.sb-label{padding:10px 18px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#444}
+.sb-list{flex:1;overflow-y:auto;padding:4px 8px}
+.sb-item{padding:8px 10px;border-radius:8px;font-size:13px;color:#666;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .1s}.sb-item:hover{background:#1a1a1a;color:#fff}.sb-item.active{background:#1c1c1c;color:#fff;font-weight:500}
+.sb-foot{border-top:1px solid #1e1e1e;padding:10px 8px}
+.sb-nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13px;color:#555;cursor:pointer;transition:all .1s}.sb-nav-item:hover{background:#1a1a1a;color:#fff}
+.sb-nav-item svg{width:15px;height:15px;flex-shrink:0}
+.sb-user{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .12s;margin-top:4px}.sb-user:hover{background:#1a1a1a}
+.avatar{width:28px;height:28px;border-radius:50%;background:#a78bfa;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.user-name{font-size:13px;font-weight:600}.user-plan{font-size:11px;color:#555}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#080808}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.75}
+.topbar{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.3);backdrop-filter:blur(8px)}
+.model-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:13px;color:#bbb;cursor:pointer}.model-chip:hover{background:rgba(255,255,255,.08)}
+.model-dot{width:7px;height:7px;border-radius:50%;background:#a78bfa}
+.bg-switcher{margin-left:auto;display:flex;gap:4px}
+.bg-btn{padding:5px 11px;border-radius:9999px;border:none;background:transparent;font-size:11px;font-weight:500;color:rgba(255,255,255,.3);cursor:pointer;transition:all .15s}.bg-btn:hover{color:rgba(255,255,255,.6)}.bg-btn.active{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15)}
+
+/* Center content */
+.center{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:0 20px 40px}
+.title{font-size:46px;font-weight:900;letter-spacing:-1.5px;text-shadow:0 0 40px rgba(167,139,250,.35)}.title span{color:#a78bfa}
+.subtitle{font-size:13.5px;color:rgba(255,255,255,.28);font-weight:500;margin-top:-20px}
+.suggestions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:620px}
+.sug{display:flex;align-items:flex-start;gap:9px;padding:13px 14px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);backdrop-filter:blur(4px);cursor:pointer;transition:all .15s;text-align:left}.sug:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14)}
+.sug-icon{font-size:16px;opacity:.65;flex-shrink:0;margin-top:1px}.sug-text{font-size:11.5px;color:rgba(255,255,255,.38);line-height:1.5}
+
+/* Input */
+.input-area{position:relative;z-index:2;padding:0 20px 20px;width:100%}
+.input-wrap{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:9999px;padding:10px 10px 10px 16px;transition:all .15s}.input-wrap:focus-within{border-color:rgba(255,255,255,.2);box-shadow:0 0 0 3px rgba(167,139,250,.08)}
+.icon-btn{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:color .12s}.icon-btn:hover{color:rgba(255,255,255,.6)}
+input[type=text]{flex:1;background:transparent;border:none;outline:none;font-size:14.5px;color:#efefef}
+input::placeholder{color:rgba(255,255,255,.25)}
+.mode-btn{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:9999px;border:none;background:transparent;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.35);cursor:pointer;transition:background .12s}.mode-btn:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)}
+.send{width:36px;height:36px;border-radius:50%;border:none;background:#efefef;color:#080808;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}.send:hover{background:#fff;transform:scale(1.05)}
+.waveform{display:flex;gap:2px;align-items:center;height:14px}
+.waveform span{display:block;width:3px;border-radius:2px;background:currentColor}
+.hint{max-width:680px;margin:8px auto 0;font-size:11px;color:rgba(255,255,255,.2);text-align:center}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sb-header">
+    <span class="sb-logo"><span>SUPER</span> SPORK</span>
+    <div class="sb-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+
+  <button class="sb-new">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New chat
+  </button>
+
+  <div class="sb-label">Today</div>
+  <div class="sb-list">
+    <div class="sb-item active">How does quantum computing work?</div>
+    <div class="sb-item">Python data pipeline script</div>
+    <div class="sb-item">REST API design patterns</div>
+    <div class="sb-item">Explain RLHF in simple terms</div>
+    <div class="sb-item">Debug my React useEffect</div>
+  </div>
+
+  <div class="sb-foot">
+    <div class="sb-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      Feed
+    </div>
+    <div class="sb-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+      Agents
+    </div>
+    <div class="sb-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Spork Code
+      <span style="margin-left:auto;font-size:10px;background:rgba(167,139,250,.2);color:#a78bfa;padding:2px 7px;border-radius:9999px">PRO</span>
+    </div>
+    <div class="sb-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Settings
+    </div>
+    <div class="sb-user" style="margin-top:8px">
+      <div class="avatar">J</div>
+      <div>
+        <div class="user-name">Jasmine</div>
+        <div class="user-plan">Super Spork ✦</div>
+      </div>
+      <svg style="margin-left:auto;opacity:.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <canvas id="bg"></canvas>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="model-chip">
+      <div class="model-dot"></div>
+      GPT-4.1 mini
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="bg-switcher">
+      <button class="bg-btn active" onclick="setMode('stars',this)">✦ Stars</button>
+      <button class="bg-btn" onclick="setMode('rain',this)">🌧 Rain</button>
+      <button class="bg-btn" onclick="setMode('storm',this)">⛈ Storm</button>
+      <button class="bg-btn" onclick="setMode('void',this)">◎ Void</button>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div class="center">
+    <div style="text-align:center">
+      <div class="title"><span>Super</span> Spork</div>
+      <div class="subtitle">Full power. No limits.</div>
+    </div>
+
+    <div class="suggestions">
+      <div class="sug"><span class="sug-icon">⚡</span><span class="sug-text">Explain how transformers work</span></div>
+      <div class="sug"><span class="sug-icon">🐍</span><span class="sug-text">Write a Python script to rename files</span></div>
+      <div class="sug"><span class="sug-icon">🌐</span><span class="sug-text">TCP vs UDP — what's the difference?</span></div>
+      <div class="sug"><span class="sug-icon">🐛</span><span class="sug-text">Why is my useEffect running twice?</span></div>
+      <div class="sug"><span class="sug-icon">🗂️</span><span class="sug-text">Design a REST API for a task manager</span></div>
+      <div class="sug"><span class="sug-icon">⚙️</span><span class="sug-text">Explain async/await vs promises</span></div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <input type="text" placeholder="Ask anything" />
+      <button class="mode-btn">Fast <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11" style="display:inline"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+      <button class="send">
+        <div class="waveform">
+          <span style="height:4px"></span><span style="height:9px"></span><span style="height:13px"></span><span style="height:9px"></span><span style="height:4px"></span>
+        </div>
+      </button>
+    </div>
+    <div class="hint">Spork can make mistakes. Consider verifying important information.</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let raf, currentMode = 'stars';
+
+function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+resize(); window.addEventListener('resize', () => { resize(); startMode(currentMode); });
+
+function setMode(mode, btn) {
+  document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cancelAnimationFrame(raf);
+  currentMode = mode;
+  startMode(mode);
+}
+
+function startMode(mode) {
+  cancelAnimationFrame(raf);
+  if (mode === 'stars') {
+    const S = Array.from({length:200}, () => ({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.4+.3, a:Math.random(), sp:Math.random()*.005+.001, d:(Math.random()-.5)*.1}));
+    const draw = () => {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(const s of S){s.a+=s.sp;if(s.a>1||s.a<0)s.sp*=-1;s.x+=s.d;if(s.x<0)s.x=canvas.width;if(s.x>canvas.width)s.x=0;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${s.a*.6})`;ctx.fill();}
+      raf=requestAnimationFrame(draw);};draw();
+  } else if (mode === 'rain') {
+    const D = Array.from({length:180},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,l:Math.random()*18+6,sp:Math.random()*8+4,a:Math.random()*.25+.08}));
+    const draw=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle='rgba(160,160,220,1)';ctx.lineWidth=.7;for(const d of D){ctx.globalAlpha=d.a;ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-1,d.y+d.l);ctx.stroke();d.y+=d.sp;if(d.y>canvas.height){d.y=-d.l;d.x=Math.random()*canvas.width;}}ctx.globalAlpha=1;raf=requestAnimationFrame(draw);};draw();
+  } else if (mode === 'storm') {
+    const D=Array.from({length:280},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,l:Math.random()*24+10,sy:Math.random()*14+8,sx:Math.random()*5+3,a:Math.random()*.3+.1}));
+    let lt=0;
+    const draw=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);if(Math.random()<.003)lt=8;if(lt>0){ctx.fillStyle=`rgba(200,200,255,${lt*.01})`;ctx.fillRect(0,0,canvas.width,canvas.height);lt--;if(lt===7){ctx.strokeStyle='rgba(220,220,255,.9)';ctx.lineWidth=2;ctx.shadowColor='#aaf';ctx.shadowBlur=20;ctx.beginPath();const bx=Math.random()*canvas.width;ctx.moveTo(bx,0);let cy=0;while(cy<canvas.height*.6){cy+=Math.random()*40+20;ctx.lineTo(bx+(Math.random()-.5)*60,cy);}ctx.stroke();ctx.shadowBlur=0;}}ctx.strokeStyle='rgba(140,140,200,1)';ctx.lineWidth=.8;for(const d of D){ctx.globalAlpha=d.a;ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+d.sx*1.2,d.y+d.l);ctx.stroke();d.y+=d.sy;d.x+=d.sx;if(d.y>canvas.height||d.x>canvas.width){d.y=-d.l;d.x=Math.random()*canvas.width;}}ctx.globalAlpha=1;raf=requestAnimationFrame(draw);};draw();
+  } else if (mode === 'void') {
+    let t=0;const cx=canvas.width/2,cy=canvas.height/2;
+    const draw=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);for(let i=5;i>=1;i--){const r=(i/5)*Math.min(cx,cy)*.8+Math.sin(t*.6+i)*10;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle=`rgba(140,80,255,${.03+(i/5)*.04})`;ctx.lineWidth=1.5;ctx.stroke();}for(let j=0;j<40;j++){const a=(j/40)*Math.PI*2+t*.2,rad=Math.min(cx,cy)*.45+Math.sin(t+j*1.3)*30,px=cx+Math.cos(a)*rad,py=cy+Math.sin(a)*rad;ctx.beginPath();ctx.arc(px,py,1.2,0,Math.PI*2);ctx.fillStyle=`rgba(167,139,250,${.15+Math.sin(t*2+j)*.1})`;ctx.fill();}t+=.012;raf=requestAnimationFrame(draw);};draw();
+  }
+}
+
+startMode('stars');
+</script>
+</body>
+</html>

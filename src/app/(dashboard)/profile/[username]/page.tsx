@@ -201,7 +201,7 @@ export default function ProfilePage() {
                 🔗 {profile.link}
               </a>
             )}
-            <span>Joined {timeAgo(profile.createdAt))}</span>
+            <span>Joined {timeAgo(profile.createdAt)}</span>
           </div>
         </div>
 
@@ -256,7 +256,7 @@ export default function ProfilePage() {
             return (
               <span
                 key={badge.type}
-                title={`Awarded ${timeAgo(badge.awardedAt))}`}
+                title={`Awarded ${timeAgo(badge.awardedAt)}`}
                 className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-300 flex items-center gap-1"
               >
                 {info.emoji} {info.label}
@@ -292,14 +292,14 @@ export default function ProfilePage() {
           {profile.posts.map((post) => (
             <div
               key={post.id}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2 hover:border-zinc-700 transition-colors"
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-2 hover:border-zinc-700 transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${POST_TYPE_COLORS[post.type] ?? "bg-zinc-700 text-zinc-300"}`}>
                   {post.type.toLowerCase()}
                 </span>
                 <span className="text-xs text-zinc-600 ml-auto">
-                  {timeAgo(post.createdAt))}
+                  {timeAgo(post.createdAt)}
                 </span>
               </div>
               <p className="text-zinc-200 text-sm whitespace-pre-wrap break-words">{post.content}</p>
@@ -336,7 +336,7 @@ export default function ProfilePage() {
             <button
               key={conv.id}
               onClick={() => router.push(`/share/${conv.id}`)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-left hover:border-zinc-700 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-left hover:border-zinc-700 transition-colors"
             >
               <p className="text-white text-sm font-medium truncate">{conv.title}</p>
               <div className="flex items-center gap-3 mt-1 text-xs text-zinc-600">
@@ -344,7 +344,7 @@ export default function ProfilePage() {
                 <span>👁 {conv.views}</span>
                 {conv.agentId && <span className="text-purple-500">@{conv.agentId}</span>}
                 <span className="ml-auto">
-                  {timeAgo(conv.createdAt))}
+                  {timeAgo(conv.createdAt)}
                 </span>
               </div>
             </button>

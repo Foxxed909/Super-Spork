@@ -259,7 +259,7 @@ export default function CanvasPage() {
         </div>
         <Link
           href="/settings"
-          className="px-6 py-2.5 bg-[#a78bfa] hover:bg-[#9061f9] text-white rounded-xl text-sm font-semibold transition-colors"
+          className="px-6 py-2.5 bg-[#a78bfa] hover:bg-[#9061f9] text-white rounded-2xl text-sm font-semibold transition-colors"
         >
           Upgrade to Super Spork
         </Link>
@@ -302,7 +302,7 @@ export default function CanvasPage() {
                       setInput(s);
                       inputRef.current?.focus();
                     }}
-                    className="w-full text-left text-xs px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-[#888] hover:text-white hover:border-[#3a3a3a] transition-colors leading-relaxed"
+                    className="w-full text-left text-xs px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-[#888] hover:text-white hover:border-[#3a3a3a] transition-colors leading-relaxed"
                   >
                     {s}
                   </button>
@@ -349,7 +349,7 @@ export default function CanvasPage() {
 
         {/* Input */}
         <div className="p-3 border-t border-[#2a2a2a]">
-          <div className="flex items-end gap-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-3 py-2 focus-within:border-[#3a3a3a] transition-colors">
+          <div className="flex items-end gap-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl px-3 py-2 focus-within:border-[#3a3a3a] transition-colors">
             <textarea
               ref={inputRef}
               value={input}
@@ -365,7 +365,7 @@ export default function CanvasPage() {
               onClick={isLoading ? stop : handleSend}
               disabled={!isLoading && (!input.trim() || !convId)}
               className={cn(
-                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all",
+                "w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all",
                 isLoading
                   ? "bg-red-500/20 text-red-400"
                   : input.trim() && convId

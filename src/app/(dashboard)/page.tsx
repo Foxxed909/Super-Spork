@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ModelSelector } from "@/components/chat/ModelSelector";
 import { MessageInput } from "@/components/chat/MessageInput";
+import { AnimatedBackground, type BgMode } from "@/components/AnimatedBackground";
 import { DEFAULT_FREE_MODEL } from "@/lib/models";
 import { Sparkles } from "lucide-react";
 
@@ -14,12 +15,19 @@ interface UserData {
 }
 
 const SUGGESTIONS = [
-  "Explain how transformers work in plain English",
-  "Write a Python script to rename files in bulk",
-  "What's the difference between TCP and UDP?",
-  "Debug this: why is my useEffect running twice?",
-  "Design a REST API for a task manager app",
-  "Explain async/await vs promises",
+  { icon: "⚡", text: "Explain how transformers work" },
+  { icon: "🐍", text: "Write a Python script to rename files" },
+  { icon: "🌐", text: "TCP vs UDP — what's the difference?" },
+  { icon: "🐛", text: "Why is my useEffect running twice?" },
+  { icon: "🗂️", text: "Design a REST API for a task manager" },
+  { icon: "⚙️", text: "Explain async/await vs promises" },
+];
+
+const BG_MODES: { mode: BgMode; label: string }[] = [
+  { mode: "stars", label: "✦ Stars" },
+  { mode: "rain",  label: "🌧 Rain" },
+  { mode: "storm", label: "⛈ Storm" },
+  { mode: "void",  label: "◎ Void" },
 ];
 
 export default function HomePage() {
@@ -29,6 +37,7 @@ export default function HomePage() {
   const [input, setInput] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [bgMode, setBgMode] = useState<BgMode>("stars");
 
   useEffect(() => {
     fetch("/api/user")
@@ -41,17 +50,13 @@ export default function HomePage() {
     if (!input.trim() || isCreating) return;
     setIsCreating(true);
     setCreateError(null);
-
     try {
       const res = await fetch("/api/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: selectedModel }),
       });
-      if (!res.ok) {
-        setCreateError("Failed to create conversation. Please try again.");
-        return;
-      }
+      if (!res.ok) { setCreateError("Failed to create conversation."); return; }
       const conv = await res.json();
       router.push(`/chat/${conv.id}?q=${encodeURIComponent(input.trim())}`);
     } catch {
@@ -61,93 +66,107 @@ export default function HomePage() {
     }
   };
 
-  const handleSuggestion = (text: string) => {
-    setInput(text);
-  };
-
-  const isAtLimit =
-    userData?.tier === "FREE" &&
-    userData.dailyMessages >= userData.dailyLimit;
+  const isAtLimit = userData?.tier === "FREE" && userData.dailyMessages >= userData.dailyLimit;
+  const isSuperSpork = userData?.tier === "SUPER_SPORK";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full bg-[#080808] overflow-hidden">
+      {/* Animated background */}
+      <AnimatedBackground mode={bgMode} />
+
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1e1e1e]">
+      <div className="relative z-10 flex items-center gap-3 px-5 py-3 border-b border-white/[0.05] bg-black/30 backdrop-blur-sm">
         {userData && (
-          <ModelSelector
-            value={selectedModel}
-            onChange={setSelectedModel}
-            userTier={userData.tier}
-          />
+          <ModelSelector value={selectedModel} onChange={setSelectedModel} userTier={userData.tier} />
         )}
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-black tracking-tight text-white mb-2">
-            {userData?.tier === "SUPER_SPORK" ? (
-              <>
-                <span className="text-[#a78bfa]">Super</span> Spork
-              </>
-            ) : (
-              "Spork"
-            )}
-          </h1>
-          <p className="text-[#666] text-sm">
-            {userData?.tier === "SUPER_SPORK"
-              ? "Full power. No limits."
-              : "What can I help with today?"}
-          </p>
-        </div>
-
-        {/* Suggestions */}
-        <div className="grid grid-cols-2 gap-2 max-w-2xl w-full sm:grid-cols-3">
-          {SUGGESTIONS.map((s) => (
+        {/* BG mode switcher */}
+        <div className="ml-auto flex items-center gap-1">
+          {BG_MODES.map(({ mode, label }) => (
             <button
-              key={s}
-              onClick={() => handleSuggestion(s)}
-              className="text-left px-3 py-2.5 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-[#888] hover:text-white hover:border-[#3a3a3a] transition-colors leading-relaxed"
+              key={mode}
+              onClick={() => setBgMode(mode)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                bgMode === mode
+                  ? "bg-white/10 text-white border border-white/20"
+                  : "text-white/30 hover:text-white/60"
+              }`}
             >
-              {s}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Create error */}
+      {/* Center */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 gap-8 -mt-6">
+
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-3 select-none">
+          <h1 className="text-5xl font-black tracking-tight leading-none drop-shadow-[0_0_30px_rgba(167,139,250,0.35)]">
+            {isSuperSpork ? (
+              <><span className="text-[#a78bfa]">Super</span>{" "}<span className="text-white">Spork</span></>
+            ) : (
+              <span className="text-white">Spork</span>
+            )}
+          </h1>
+          <p className="text-white/30 text-sm font-medium">
+            {isSuperSpork ? "Full power. No limits." : "What do you want to know?"}
+          </p>
+        </div>
+
+        {/* Suggestions */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-[640px] w-full">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s.text}
+              onClick={() => setInput(s.text)}
+              className="group flex items-start gap-2.5 text-left px-3.5 py-3 rounded-2xl
+                bg-white/[0.03] border border-white/[0.07] backdrop-blur-sm
+                text-xs text-white/35 hover:text-white/70 hover:bg-white/[0.07] hover:border-white/[0.14]
+                transition-all leading-relaxed"
+            >
+              <span className="text-base leading-none mt-0.5 opacity-60 group-hover:opacity-100 transition-opacity">{s.icon}</span>
+              <span>{s.text}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Error */}
       {createError && (
-        <div className="px-4 pt-2 max-w-3xl mx-auto w-full">
+        <div className="relative z-10 px-4 pt-2 max-w-3xl mx-auto w-full">
           <p className="text-sm text-red-400 text-center">{createError}</p>
         </div>
       )}
 
       {/* Input */}
-      {isAtLimit ? (
-        <div className="px-4 pb-4 pt-2 max-w-3xl mx-auto w-full">
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 text-center">
-            <p className="text-sm text-[#888] mb-3">
-              You&apos;ve used all {userData?.dailyLimit.toLocaleString()} free messages today.
-            </p>
-            <a
-              href="/settings"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] text-white rounded-lg text-sm font-semibold hover:bg-[#9061f9] transition-colors"
-            >
-              <Sparkles size={14} />
-              Upgrade to Super Spork
-            </a>
+      <div className="relative z-10">
+        {isAtLimit ? (
+          <div className="px-4 pb-5 pt-2 max-w-3xl mx-auto w-full">
+            <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 text-center backdrop-blur-sm">
+              <p className="text-sm text-white/40 mb-3">
+                You&apos;ve used all {userData?.dailyLimit.toLocaleString()} free messages today.
+              </p>
+              <a
+                href="/settings"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] text-white rounded-full text-sm font-semibold hover:bg-[#9061f9] transition-colors"
+              >
+                <Sparkles size={14} />
+                Upgrade to Super Spork
+              </a>
+            </div>
           </div>
-        </div>
-      ) : (
-        <MessageInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSend}
-          onStop={() => {}}
-          isLoading={isCreating}
-          disabled={!userData}
-        />
-      )}
+        ) : (
+          <MessageInput
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSend}
+            onStop={() => {}}
+            isLoading={isCreating}
+            disabled={!userData}
+          />
+        )}
+      </div>
     </div>
   );
 }
