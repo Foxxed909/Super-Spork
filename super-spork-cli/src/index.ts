@@ -1,27 +1,28 @@
 #!/usr/bin/env node
 /**
- * SporkX CLI — unified AI terminal. Combines spork + super into one tool.
+ * SporkX CLI — unified AI terminal. Combines @spork/cli + @spork/super into one binary.
  *
  * Usage:
  *   sporkx [prompt]               — quick chat
- *   sporkx code <prompt>          — code with syntax highlighting
- *   sporkx fif [path]             — bug audit
+ *   sporkx code <prompt>          — code generation with syntax highlighting
+ *   sporkx fif [path]             — bug audit (single file or directory)
  *   sporkx run <task>             — agentic task runner
  *   sporkx review                 — git diff code review
  *   sporkx scan [path]            — SAST security scan
  *   sporkx test [path]            — run test suite + optional --fix
- *   sporkx docs [path]            — generate documentation
+ *   sporkx docs [path]            — generate JSDoc/docstring documentation
  *   sporkx fix <file> "<error>"   — targeted single-file fix
- *   sporkx estimate "<task>"      — cost estimate before running
- *   sporkx explain <file>         — explain a file
- *   sporkx memory show|add|clear  — project memory
+ *   sporkx estimate "<task>"      — cost estimate before executing
+ *   sporkx explain <file>         — explain what a file does
+ *   sporkx memory show|add|clear  — project memory management
  *   sporkx feedback <subject>     — submit feedback to Spork inbox
  *   sporkx link                   — link CLI to Spork web account
- *   sporkx with <tool> <task>     — delegate to Claude Code, Gemini, Codex, etc.
+ *   sporkx with <tool> <task>     — delegate to Claude Code, Gemini, Codex, Qwen
  *   sporkx login <key>            — save OpenRouter API key
  *   sporkx config                 — show current config
  */
 import { program } from "commander";
+import * as fs from "fs";
 import { chat, highlightCodeFences, DEFAULT_CHAT_MODEL } from "./chat";
 import { fif } from "./fif";
 import { run } from "./run";
@@ -54,14 +55,15 @@ program
 
     let finalPrompt = prompt;
     if (!finalPrompt) {
-      const { createInterface } = await import("readline");
       if (process.stdin.isTTY) {
         console.error("Usage: sporkx <prompt>  or  cat file.txt | sporkx <prompt>");
         process.exit(1);
       }
-      const fs = await import("fs");
       finalPrompt = fs.readFileSync("/dev/stdin", "utf8").trim();
-      if (!finalPrompt) { console.error("No input provided."); process.exit(1); }
+      if (!finalPrompt) {
+        console.error("No input provided.");
+        process.exit(1);
+      }
     }
 
     await chat({
@@ -83,7 +85,7 @@ program
     const apiKey = requireApiKey(cfg);
     const model = opts.model ?? cfg.model ?? DEFAULT_CHAT_MODEL;
 
-    let chunks: string[] = [];
+    const chunks: string[] = [];
     const origWrite = process.stdout.write.bind(process.stdout);
     try {
       process.stdout.write = (s: string | Uint8Array): boolean => {
@@ -111,7 +113,7 @@ program
   .option("-m, --model <id>", "Model to use")
   .option("--apply", "Automatically apply suggested fixes")
   .action(async (filePath: string | undefined, opts: { model?: string; apply: boolean }) => {
-    await fif({ targetPath: filePath, model: opts.model, apply: opts.apply });
+    await fif({ filePath: filePath ?? ".", model: opts.model, apply: opts.apply });
   });
 
 // run: agentic task
@@ -140,7 +142,7 @@ program
   .description("Security scan (SAST) — check for OWASP Top 10 vulnerabilities")
   .option("-m, --model <id>", "Model to use")
   .action(async (filePath: string | undefined, opts: { model?: string }) => {
-    await scan({ targetPath: filePath, model: opts.model });
+    await scan({ filePath: filePath ?? ".", model: opts.model });
   });
 
 // test: run test suite + optional AI fix
@@ -187,8 +189,8 @@ program
   .command("explain <file>")
   .description("Explain what a file does")
   .option("-m, --model <id>", "Model to use")
-  .action(async (filePath: string, opts: { model?: string }) => {
-    await explain({ filePath, model: opts.model });
+  .action(async (file: string, opts: { model?: string }) => {
+    await explain({ file, model: opts.model });
   });
 
 // memory: project memory management
@@ -222,7 +224,11 @@ program
   .option("-t, --type <type>", "Feedback type: bug, feature, complaint, general")
   .option("-b, --body <text>", "Feedback body (skips interactive prompt)")
   .action(async (subject: string, opts: { type?: string; body?: string }) => {
-    await feedback({ subject, type: opts.type as never, body: opts.body });
+    await feedback({
+      subject,
+      type: opts.type as "bug" | "feature" | "complaint" | "general" | undefined,
+      body: opts.body,
+    });
   });
 
 // link: link CLI to Spork web account
