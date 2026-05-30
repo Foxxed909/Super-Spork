@@ -1,0 +1,11 @@
+# Install on a CUDA GPU host. Versions are floors known to work together.
+torch>=2.4
+transformers>=4.46
+trl>=0.12
+peft>=0.13
+datasets>=3.0
+accelerate>=1.0
+bitsandbytes>=0.44
+pyyaml>=6.0
+# Serving the resulting adapter (optional, on the GPU host):
+# vllm>=0.6

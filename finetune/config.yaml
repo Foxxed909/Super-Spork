@@ -1,0 +1,35 @@
+# Spork × Nemotron LoRA fine-tune config.
+# Tweak freely; defaults target a single 24GB GPU with 4-bit QLoRA.
+
+# Base model. Nemotron Nano 9B is small enough to QLoRA on one consumer GPU.
+# Swap for a larger Nemotron if you have the VRAM (e.g. nemotron-3-nano-30b).
+model_id: "nvidia/NVIDIA-Nemotron-Nano-9B-v2"
+
+# Dataset produced by export_dataset.ts
+train_file: "finetune/data/train.jsonl"
+val_file: "finetune/data/val.jsonl"
+
+output_dir: "finetune/output/spork-nemotron-lora"
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  # Attention + MLP projections — standard LoRA targets for Llama/Nemotron-style blocks.
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+train:
+  epochs: 3
+  batch_size: 2
+  grad_accum: 8          # effective batch = 16
+  lr: 0.0002
+  warmup_ratio: 0.03
+  max_seq_len: 4096
+  packing: true

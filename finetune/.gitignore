@@ -1,0 +1,6 @@
+# Generated datasets and training artifacts — never commit these.
+data/
+output/
+*.jsonl
+.venv/
+__pycache__/
