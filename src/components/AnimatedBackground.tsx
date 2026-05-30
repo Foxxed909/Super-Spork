@@ -214,7 +214,7 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
       const bits: Bit[] = Array.from({ length: MAX }, () => spawn());
       let t = 0;
       let pulse = 0; // frames since last feeding pulse
-      const PULSE_EVERY = 260; // ~4–5s at 60fps: the periodic "suck" event
+      const PULSE_EVERY = 270; // ~4.5s at 60fps: the periodic "suck" event (< 5s)
 
       const draw = () => {
         const w = canvas.width, h = canvas.height;
@@ -234,14 +234,27 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
         ctx.arc(X, Y, rh * 4.2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Feeding pulse — periodically inject a burst of fresh matter.
+        // Feeding pulse — periodically inject a big burst of fresh matter.
         pulse++;
-        const feeding = pulse % PULSE_EVERY < 24;
-        if (pulse % PULSE_EVERY === 0) {
+        const phase = pulse % PULSE_EVERY;
+        const feeding = phase < 24;
+        if (phase === 0) {
           let injected = 0;
           for (const b of bits) {
-            if (!b.alive && injected < 60) { Object.assign(b, spawn(true)); injected++; }
+            if (!b.alive && injected < 90) { Object.assign(b, spawn(true)); injected++; }
           }
+        }
+
+        // Shockwave: a bright ring races inward toward the horizon right after
+        // each pulse, making the "suck" cadence read clearly.
+        if (phase < 46) {
+          const p = phase / 46;
+          const swR = rh * 1.18 + (1 - p) * reach() * 0.5;
+          ctx.strokeStyle = `rgba(190,170,255,${(1 - p) * 0.5})`;
+          ctx.lineWidth = 2.5 * (1 - p) + 0.5;
+          ctx.beginPath();
+          ctx.arc(X, Y, swR, 0, Math.PI * 2);
+          ctx.stroke();
         }
 
         for (const b of bits) {
