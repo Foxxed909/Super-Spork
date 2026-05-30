@@ -2,12 +2,14 @@ import { db } from "@/lib/db";
 import { getOrCreateUser } from "@/lib/user";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { hasClerkServerKeys } from "@/lib/clerk-server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope") ?? "public";
 
   if (scope === "mine") {
+    if (!hasClerkServerKeys()) return new NextResponse("Clerk not configured", { status: 503 });
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     const user = await getOrCreateUser(userId);
@@ -31,6 +33,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!hasClerkServerKeys()) return new NextResponse("Clerk not configured", { status: 503 });
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
@@ -57,6 +60,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!hasClerkServerKeys()) return new NextResponse("Clerk not configured", { status: 503 });
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
@@ -68,3 +72,4 @@ export async function DELETE(req: NextRequest) {
   await db.savedPrompt.deleteMany({ where: { id, userId: user.id } });
 
   return new NextResponse(null, { status: 204 });
+}

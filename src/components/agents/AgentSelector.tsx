@@ -5,10 +5,15 @@ import { ChevronDown, X } from "lucide-react";
 import { AGENTS } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
+
 interface AgentSelectorProps {
   value: string | null;
   onChange: (agentId: string | null) => void;
-  userTier: "FREE" | "SUPER_SPORK";
+  userTier: string;
 }
 
 export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps) {
@@ -87,7 +92,7 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
             <span className="text-[10px] font-semibold text-[#a78bfa] uppercase tracking-wider">Super Spork</span>
           </div>
           {paidAgents.map((agent) => {
-            const isLocked = userTier !== "SUPER_SPORK";
+            const isLocked = (TIER_RANK[userTier] ?? 0) < 3;
             return (
               <AgentOption
                 key={agent.id}

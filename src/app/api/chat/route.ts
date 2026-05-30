@@ -3,11 +3,12 @@ import { streamText, type CoreMessage } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { canUseModel, hasReachedDailyLimit, getSystemPrompt } from "@/lib/tier";
+import { canUseModel, hasReachedDailyLimit, getSystemPrompt, atLeastSuperSpork } from "@/lib/tier";
 import { BERRY_MODEL, BERRY_PRIMARY_MODEL, BERRY_FALLBACK_MODEL } from "@/lib/models";
 import { getAgent } from "@/lib/agents";
 import { hasClerkServerKeys } from "@/lib/clerk-server";
 import { getOrCreateUser } from "@/lib/user";
+import { braveSearch } from "@/lib/search";
 
 // Resolve Berry-alpha1937 virtual model to its actual OpenRouter backend
 function resolveModel(model: string, agentId?: string): string {
@@ -46,10 +47,13 @@ export async function POST(req: NextRequest) {
     agentId: string | undefined,
     codeContext: string | undefined,
     sporkCode: boolean | undefined,
-    canvas: boolean | undefined;
+    canvas: boolean | undefined,
+    webSearch: boolean | undefined,
+    tone: string | undefined,
+    convSystemPrompt: string | undefined;
 
   try {
-    ({ messages, model, conversationId, agentId, codeContext, sporkCode, canvas } =
+    ({ messages, model, conversationId, agentId, codeContext, sporkCode, canvas, webSearch, tone, convSystemPrompt } =
       await req.json());
   } catch {
     return new Response("Invalid request body", { status: 400 });
@@ -96,7 +100,7 @@ export async function POST(req: NextRequest) {
 
   // Fetch memories for Super Spork users to inject into context
   let memoryContext: string | undefined;
-  if (user.tier === "SUPER_SPORK") {
+  if (atLeastSuperSpork(user.tier)) {
     const memories = await db.userMemory.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -107,14 +111,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const systemContent = getSystemPrompt(user.tier, {
+  // Web search injection for SUPER_SPORK+ users
+  let searchContext: string | undefined;
+  if (webSearch && atLeastSuperSpork(user.tier)) {
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    if (lastUserMsg) {
+      const results = await braveSearch(lastUserMsg.slice(0, 200));
+      if (results) searchContext = results;
+    }
+  }
+
+  let systemContent = getSystemPrompt(user.tier, {
     agentId,
     customInstructions: user.customInstructions,
     codeContext,
     sporkCode,
     canvas,
     memoryContext,
+    searchContext,
+    tone,
   });
+
+  // Per-conversation system prompt override (injected as additional instruction)
+  if (convSystemPrompt?.trim()) {
+    systemContent = systemContent
+      ? `${systemContent}\n\n[Conversation-specific instructions from user]: ${convSystemPrompt.trim()}`
+      : convSystemPrompt.trim();
+  }
 
   const allMessages: CoreMessage[] = systemContent
     ? [{ role: "system", content: systemContent }, ...(messages as CoreMessage[])]

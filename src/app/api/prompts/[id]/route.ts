@@ -30,3 +30,4 @@ export async function POST(
     .catch(() => {});
 
   return new NextResponse(null, { status: 204 });
+}

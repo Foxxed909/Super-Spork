@@ -15,7 +15,11 @@ export async function GET() {
   const user = await getOrCreateUser(userId);
 
   const tokens = await db.apiToken.findMany({
-    where: { userId: user.id, isActive: true },
+    where: {
+      userId: user.id,
+      isActive: true,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    },
     select: { id: true, label: true, lastUsedAt: true, createdAt: true, expiresAt: true },
     orderBy: { createdAt: "desc" },
   });
@@ -47,3 +51,4 @@ export async function POST(req: NextRequest) {
 
   // Return raw token ONCE — not stored, only the hash is kept
   return NextResponse.json({ token: rawToken, label: label.trim() }, { status: 201 });
+}

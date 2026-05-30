@@ -8,7 +8,7 @@ import { useState } from "react";
 import { DEFAULT_PAID_MODEL } from "@/lib/models";
 
 interface CodeChatProps {
-  userTier: "FREE" | "SUPER_SPORK";
+  userTier: string;
   contextCode?: string;
   isFif?: boolean;
 }

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { hasClerkServerKeys } from "@/lib/clerk-server";
 
 const TIER_PRICE_MAP: Record<string, string | undefined> = {
   SPORK_LITE: process.env.STRIPE_PRICE_LITE,
@@ -21,6 +22,7 @@ function getStripe() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!hasClerkServerKeys()) return new NextResponse("Clerk not configured", { status: 503 });
   const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 

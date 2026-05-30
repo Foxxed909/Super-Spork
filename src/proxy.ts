@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server";
 import { hasClerkServerKeys } from "@/lib/clerk-server";
 
 const isPublicRoute = createRouteMatcher([
@@ -14,12 +14,12 @@ const protectedProxy = clerkMiddleware(async (auth, req) => {
   }
 });
 
-export default function proxy(req: NextRequest) {
+export default function proxy(req: NextRequest, event: NextFetchEvent) {
   if (!hasClerkServerKeys()) {
     return NextResponse.next();
   }
 
-  return protectedProxy(req);
+  return protectedProxy(req, event);
 }
 
 export const config = {

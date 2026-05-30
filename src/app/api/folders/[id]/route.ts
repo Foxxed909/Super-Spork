@@ -61,3 +61,4 @@ export async function DELETE(
   await db.folder.delete({ where: { id } });
 
   return new NextResponse(null, { status: 204 });
+}

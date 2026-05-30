@@ -8,6 +8,7 @@ import { getAgent } from "@/lib/agents";
 import { ALL_MODELS } from "@/lib/models";
 
 type Filter = "new" | "top";
+type Since = "all" | "today" | "week";
 
 interface FeedConversation {
   id: string;
@@ -19,6 +20,7 @@ interface FeedConversation {
   updatedAt: string;
   messages: Array<{ content: string; role: string }>;
   user: { email: string; username: string | null };
+  liked?: boolean;
 }
 
 function getModelName(modelId: string): string {
@@ -28,13 +30,14 @@ function getModelName(modelId: string): string {
 export default function FeedPage() {
   const [conversations, setConversations] = useState<FeedConversation[]>([]);
   const [filter, setFilter] = useState<Filter>("new");
+  const [since, setSince] = useState<Since>("all");
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadFeed = useCallback(async (f: Filter, c: string | null, append = false) => {
+  const loadFeed = useCallback(async (f: Filter, s: Since, c: string | null, append = false) => {
     setLoading(true);
-    const params = new URLSearchParams({ filter: f });
+    const params = new URLSearchParams({ filter: f, since: s });
     if (c) params.set("cursor", c);
     const res = await fetch(`/api/feed?${params}`);
     const data = await res.json();
@@ -45,17 +48,27 @@ export default function FeedPage() {
   }, []);
 
   useEffect(() => {
-    loadFeed(filter, null);
-  }, [filter, loadFeed]);
+    loadFeed(filter, since, null);
+  }, [filter, since, loadFeed]);
 
   const handleLike = async (id: string) => {
+    const conv = conversations.find((c) => c.id === id);
+    if (!conv || conv.liked) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, likes: c.likes + 1, liked: true } : c))
+    );
     try {
       const res = await fetch(`/api/conversations/${id}/like`, { method: "POST" });
-      if (!res.ok) return;
+      if (!res.ok) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, likes: c.likes - 1, liked: false } : c))
+        );
+      }
+    } catch {
       setConversations((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, likes: c.likes + 1 } : c))
+        prev.map((c) => (c.id === id ? { ...c, likes: c.likes - 1, liked: false } : c))
       );
-    } catch {}
+    }
   };
 
   return (
@@ -66,21 +79,37 @@ export default function FeedPage() {
           <p className="text-sm text-[#666] mt-1">Public conversations from the Spork community</p>
         </div>
 
-        <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-full border border-[#2a2a2a]">
-          {(["new", "top"] as Filter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-sm capitalize transition-colors",
-                filter === f
-                  ? "bg-[#2a2a2a] text-white font-medium"
-                  : "text-[#666] hover:text-[#aaa]"
-              )}
-            >
-              {f === "top" ? "🔥 Top" : "✨ New"}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Time filter */}
+          <div className="flex gap-0.5 bg-[#1a1a1a] p-1 rounded-full border border-[#2a2a2a]">
+            {(["all", "week", "today"] as Since[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSince(s)}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-xs capitalize transition-colors",
+                  since === s ? "bg-[#2a2a2a] text-white font-medium" : "text-[#555] hover:text-[#aaa]"
+                )}
+              >
+                {s === "all" ? "All time" : s === "week" ? "This week" : "Today"}
+              </button>
+            ))}
+          </div>
+          {/* Sort filter */}
+          <div className="flex gap-0.5 bg-[#1a1a1a] p-1 rounded-full border border-[#2a2a2a]">
+            {(["new", "top"] as Filter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-sm capitalize transition-colors",
+                  filter === f ? "bg-[#2a2a2a] text-white font-medium" : "text-[#666] hover:text-[#aaa]"
+                )}
+              >
+                {f === "top" ? "🔥 Top" : "✨ New"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -142,9 +171,10 @@ export default function FeedPage() {
                     </span>
                     <button
                       onClick={(e) => { e.preventDefault(); handleLike(conv.id); }}
-                      className="flex items-center gap-1 hover:text-pink-400 transition-colors"
+                      className={`flex items-center gap-1 transition-colors ${conv.liked ? "text-pink-400" : "hover:text-pink-400"}`}
+                      title={conv.liked ? "Liked" : "Like"}
                     >
-                      <Heart size={10} />
+                      <Heart size={10} fill={conv.liked ? "currentColor" : "none"} />
                       {conv.likes}
                     </button>
                   </div>
@@ -161,7 +191,7 @@ export default function FeedPage() {
 
           {hasMore && !loading && (
             <button
-              onClick={() => loadFeed(filter, cursor, true)}
+              onClick={() => loadFeed(filter, since, cursor, true)}
               className="w-full py-3 text-sm text-[#666] hover:text-white transition-colors border border-[#2a2a2a] rounded-2xl"
             >
               Load more

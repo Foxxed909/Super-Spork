@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MessageSquare, Plus, Settings, Store, Download, X } from "lucide-react";
+import { Search, MessageSquare, Plus, Settings, Store, Download, X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Conversation {
@@ -36,10 +36,19 @@ function fuzzyMatch(text: string, query: string): boolean {
   return qi === lQuery.length;
 }
 
+interface ContentResult {
+  messageId: string;
+  conversationId: string;
+  conversationTitle: string;
+  role: string;
+  excerpt: string;
+}
+
 export function CommandPalette({ open, onClose, onNewChat }: CommandPaletteProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [contentResults, setContentResults] = useState<ContentResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -48,12 +57,28 @@ export function CommandPalette({ open, onClose, onNewChat }: CommandPaletteProps
     if (!open) return;
     setQuery("");
     setActiveIndex(0);
+    setContentResults([]);
     fetch("/api/conversations")
       .then((r) => r.json())
-      .then((data: Conversation[]) => setConversations(data.slice(0, 10)))
+      .then((data: Conversation[] | { conversations: Conversation[] }) => {
+        const list = Array.isArray(data) ? data : (data.conversations ?? []);
+        setConversations(list.slice(0, 10));
+      })
       .catch(() => {});
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
+
+  // Debounced content search
+  useEffect(() => {
+    if (query.length < 3) { setContentResults([]); return; }
+    const t = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        .then((r) => r.json())
+        .then((data: ContentResult[]) => setContentResults(Array.isArray(data) ? data.slice(0, 5) : []))
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const actions: PaletteItem[] = [
     {
@@ -101,7 +126,15 @@ export function CommandPalette({ open, onClose, onNewChat }: CommandPaletteProps
 
   const filteredActions = actions.filter((a) => fuzzyMatch(a.label, query));
 
-  const allItems: PaletteItem[] = [...convItems, ...filteredActions];
+  const contentItems: PaletteItem[] = contentResults.map((r) => ({
+    id: `content:${r.messageId}`,
+    label: r.conversationTitle,
+    group: "conversations" as const,
+    icon: <FileText size={14} className="text-[#666]" />,
+    action: () => { onClose(); router.push(`/chat/${r.conversationId}`); },
+  }));
+
+  const allItems: PaletteItem[] = [...convItems, ...contentItems, ...filteredActions];
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -137,9 +170,11 @@ export function CommandPalette({ open, onClose, onNewChat }: CommandPaletteProps
   if (!open) return null;
 
   const hasConvs = convItems.length > 0;
+  const hasContent = contentItems.length > 0;
   const hasActions = filteredActions.length > 0;
   const convOffset = 0;
-  const actionOffset = convItems.length;
+  const contentOffset = convItems.length;
+  const actionOffset = convItems.length + contentItems.length;
 
   return (
     <div
@@ -163,7 +198,7 @@ export function CommandPalette({ open, onClose, onNewChat }: CommandPaletteProps
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search conversations, actions..."
+            placeholder="Search conversations, messages, actions..."
             className="flex-1 bg-transparent text-sm text-white placeholder-[#555] outline-none"
           />
           <button onClick={onClose} className="text-[#555] hover:text-white transition-colors">
@@ -192,9 +227,36 @@ export function CommandPalette({ open, onClose, onNewChat }: CommandPaletteProps
                   ))}
                 </>
               )}
-              {hasActions && (
+              {hasContent && (
                 <>
                   <div className={cn("px-4 pb-1", hasConvs ? "pt-3 border-t border-[#2a2a2a] mt-1" : "pt-3")}>
+                    <span className="text-[10px] font-semibold text-[#555] uppercase tracking-wider">Message matches</span>
+                  </div>
+                  {contentItems.map((item, idx) => {
+                    const r = contentResults[idx];
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={item.action}
+                        onMouseEnter={() => setActiveIndex(contentOffset + idx)}
+                        className={cn(
+                          "w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors",
+                          activeIndex === contentOffset + idx ? "bg-[#1e1e1e]" : "hover:bg-[#1a1a1a]"
+                        )}
+                      >
+                        <FileText size={14} className="text-[#555] shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-[#aaa] font-medium truncate">{item.label}</p>
+                          <p className="text-[11px] text-[#555] truncate mt-0.5">{r?.excerpt}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+              {hasActions && (
+                <>
+                  <div className={cn("px-4 pb-1", (hasConvs || hasContent) ? "pt-3 border-t border-[#2a2a2a] mt-1" : "pt-3")}>
                     <span className="text-[10px] font-semibold text-[#555] uppercase tracking-wider">Actions</span>
                   </div>
                   {filteredActions.map((item, idx) => (

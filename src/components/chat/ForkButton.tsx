@@ -5,9 +5,14 @@ import { GitFork, ChevronDown } from "lucide-react";
 import { FREE_MODELS, PAID_MODELS } from "@/lib/models";
 import { cn } from "@/lib/utils";
 
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
+
 interface ForkButtonProps {
   conversationId: string;
-  userTier: "FREE" | "SUPER_SPORK";
+  userTier: string;
   onForked: (newConversationId: string) => void;
 }
 
@@ -17,7 +22,7 @@ export function ForkButton({ conversationId, userTier, onForked }: ForkButtonPro
   const ref = useRef<HTMLDivElement>(null);
 
   const availableModels =
-    userTier === "SUPER_SPORK"
+    (TIER_RANK[userTier] ?? 0) >= 3
       ? [...FREE_MODELS, ...PAID_MODELS]
       : FREE_MODELS;
 

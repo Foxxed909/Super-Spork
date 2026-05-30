@@ -29,6 +29,7 @@ export async function GET() {
     dailyMessages: effectiveDailyMessages,
     dailyLimit: FREE_DAILY_LIMIT,
     customInstructions: user.customInstructions ?? "",
+    hasOpenrouterKey: !!user.openrouterKey,
   });
 }
 
@@ -42,20 +43,34 @@ export async function PATCH(req: NextRequest) {
 
   const user = await getOrCreateUser(userId);
 
-  const { customInstructions } = await req.json();
+  const body = await req.json();
+  const { customInstructions, openrouterKey } = body;
 
   if (typeof customInstructions === "string" && customInstructions.length > 2000) {
     return new NextResponse("customInstructions must be 2000 characters or fewer", { status: 400 });
   }
 
+  if (typeof openrouterKey === "string" && openrouterKey.length > 200) {
+    return new NextResponse("openrouterKey too long", { status: 400 });
+  }
+
+  const updateData: Record<string, string | null> = {};
+  if (customInstructions !== undefined) {
+    updateData.customInstructions =
+      typeof customInstructions === "string" && customInstructions.trim()
+        ? customInstructions.trim()
+        : null;
+  }
+  if (openrouterKey !== undefined) {
+    updateData.openrouterKey =
+      typeof openrouterKey === "string" && openrouterKey.trim()
+        ? openrouterKey.trim()
+        : null;
+  }
+
   await db.user.update({
     where: { id: user.id },
-    data: {
-      customInstructions:
-        typeof customInstructions === "string" && customInstructions.trim()
-          ? customInstructions.trim()
-          : null,
-    },
+    data: updateData,
   });
 
   return new NextResponse(null, { status: 204 });

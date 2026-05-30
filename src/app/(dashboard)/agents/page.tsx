@@ -6,8 +6,13 @@ import { AGENTS } from "@/lib/agents";
 import { AgentCard } from "@/components/agents/AgentCard";
 import { Sparkles } from "lucide-react";
 
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
+
 interface UserData {
-  tier: "FREE" | "SUPER_SPORK";
+  tier: string;
 }
 
 export default function AgentsPage() {
@@ -36,7 +41,7 @@ export default function AgentsPage() {
 
   const freeAgents = AGENTS.filter((a) => a.tier === "free");
   const paidAgents = AGENTS.filter((a) => a.tier === "paid");
-  const isSuperSpork = userData?.tier === "SUPER_SPORK";
+  const isSuperSpork = (TIER_RANK[userData?.tier ?? "FREE"] ?? 0) >= 3;
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-8 max-w-5xl mx-auto w-full">

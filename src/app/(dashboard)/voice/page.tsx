@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
 interface UserData {
-  tier: "FREE" | "SUPER_SPORK";
+  tier: string;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

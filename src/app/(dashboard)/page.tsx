@@ -2,16 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ModelSelector } from "@/components/chat/ModelSelector";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { AnimatedBackground, type BgMode } from "@/components/AnimatedBackground";
 import { DEFAULT_FREE_MODEL } from "@/lib/models";
-import { Sparkles } from "lucide-react";
+import { Sparkles, MessageSquare } from "lucide-react";
+
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
 
 interface UserData {
-  tier: "FREE" | "SUPER_SPORK";
+  tier: string;
   dailyMessages: number;
   dailyLimit: number;
+}
+
+interface RecentConv {
+  id: string;
+  title: string;
 }
 
 const SUGGESTIONS = [
@@ -38,11 +49,19 @@ export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [bgMode, setBgMode] = useState<BgMode>("stars");
+  const [recentConvs, setRecentConvs] = useState<RecentConv[]>([]);
 
   useEffect(() => {
     fetch("/api/user")
       .then((r) => r.json())
       .then(setUserData)
+      .catch(() => {});
+    fetch("/api/conversations?limit=5")
+      .then((r) => r.json())
+      .then((data) => {
+        const convs = Array.isArray(data) ? data : (data.conversations ?? []);
+        setRecentConvs(convs.slice(0, 5));
+      })
       .catch(() => {});
   }, []);
 
@@ -66,8 +85,8 @@ export default function HomePage() {
     }
   };
 
-  const isAtLimit = userData?.tier === "FREE" && userData.dailyMessages >= userData.dailyLimit;
-  const isSuperSpork = userData?.tier === "SUPER_SPORK";
+  const isAtLimit = (TIER_RANK[userData?.tier ?? "FREE"] ?? 0) === 0 && (userData?.dailyMessages ?? 0) >= (userData?.dailyLimit ?? Infinity);
+  const isSuperSpork = (TIER_RANK[userData?.tier ?? "FREE"] ?? 0) >= 3;
 
   return (
     <div className="relative flex flex-col h-full bg-[#080808] overflow-hidden">
@@ -130,6 +149,25 @@ export default function HomePage() {
             </button>
           ))}
         </div>
+
+        {/* Recent conversations */}
+        {recentConvs.length > 0 && (
+          <div className="max-w-[640px] w-full">
+            <p className="text-[10px] text-white/20 uppercase tracking-wider font-semibold mb-2">Continue where you left off</p>
+            <div className="flex flex-wrap gap-1.5">
+              {recentConvs.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/chat/${c.id}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-white/30 hover:text-white/60 bg-white/[0.03] border border-white/[0.05] hover:border-white/[0.12] transition-all truncate max-w-[200px]"
+                >
+                  <MessageSquare size={11} className="shrink-0" />
+                  <span className="truncate">{c.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error */}

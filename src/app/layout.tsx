@@ -39,8 +39,6 @@ export default function RootLayout({
   return hasClerkPublishableKey() ? (
     <ClerkProvider
       dynamic
-      afterSignInUrl="/"
-      afterSignUpUrl="/"
     >
       {content}
     </ClerkProvider>

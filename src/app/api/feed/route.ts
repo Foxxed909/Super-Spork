@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const filter = searchParams.get("filter") ?? "new";
+  const since = searchParams.get("since") ?? "all";
   const cursor = searchParams.get("cursor");
   const take = 20;
 
@@ -12,13 +13,23 @@ export async function GET(req: NextRequest) {
       ? [{ likes: "desc" as const }, { views: "desc" as const }]
       : [{ updatedAt: "desc" as const }];
 
-  // Validate cursor format (cuid: lowercase alphanumeric)
   const safeCursor = cursor && /^[a-z0-9]+$/i.test(cursor) ? cursor : undefined;
+
+  let sinceDate: Date | undefined;
+  if (since === "today") {
+    sinceDate = new Date();
+    sinceDate.setHours(0, 0, 0, 0);
+  } else if (since === "week") {
+    sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  }
 
   let conversations;
   try {
     conversations = await db.conversation.findMany({
-      where: { isPublic: true },
+      where: {
+        isPublic: true,
+        ...(sinceDate ? { updatedAt: { gte: sinceDate } } : {}),
+      },
       orderBy,
       take,
       ...(safeCursor ? { skip: 1, cursor: { id: safeCursor } } : {}),
@@ -35,7 +46,7 @@ export async function GET(req: NextRequest) {
           orderBy: { createdAt: "asc" },
           select: { content: true, role: true },
         },
-        user: { select: { username: true, displayName: true, avatarUrl: true, isVerified: true } },
+        user: { select: { email: true, username: true, displayName: true, avatarUrl: true, isVerified: true } },
       },
     });
   } catch {

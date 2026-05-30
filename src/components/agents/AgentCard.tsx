@@ -4,14 +4,19 @@ import { Lock, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SporkAgent } from "@/lib/agents";
 
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
+
 interface AgentCardProps {
   agent: SporkAgent;
-  userTier: "FREE" | "SUPER_SPORK";
+  userTier: string;
   onSelect: (agentId: string) => void;
 }
 
 export function AgentCard({ agent, userTier, onSelect }: AgentCardProps) {
-  const isLocked = agent.tier === "paid" && userTier !== "SUPER_SPORK";
+  const isLocked = agent.tier === "paid" && (TIER_RANK[userTier] ?? 0) < 3;
 
   return (
     <div

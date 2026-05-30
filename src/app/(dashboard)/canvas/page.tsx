@@ -19,9 +19,15 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
+import { ModelSelector } from "@/components/chat/ModelSelector";
+
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
 
 interface UserData {
-  tier: "FREE" | "SUPER_SPORK";
+  tier: string;
 }
 
 type ArtifactType = "html" | "markdown" | "code";
@@ -187,6 +193,7 @@ export default function CanvasPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [convId, setConvId] = useState<string | null>(null);
   const [currentArtifact, setCurrentArtifact] = useState<Artifact | null>(null);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_FREE_MODEL);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -197,7 +204,7 @@ export default function CanvasPage() {
   }, []);
 
   useEffect(() => {
-    if (!convId && userData?.tier === "SUPER_SPORK") {
+    if (!convId && (TIER_RANK[userData?.tier ?? "FREE"] ?? 0) >= 3) {
       fetch("/api/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -209,9 +216,20 @@ export default function CanvasPage() {
     }
   }, [convId, userData]);
 
+  const selectedModelRef = useRef(selectedModel);
+  selectedModelRef.current = selectedModel;
+  const convIdRef = useRef(convId);
+  convIdRef.current = convId;
+
   const { messages, input, setInput, append, isLoading, stop } = useChat({
     api: "/api/chat",
-    body: { model: DEFAULT_FREE_MODEL, conversationId: convId, canvas: true },
+    experimental_prepareRequestBody: ({ messages: msgs, requestBody }) => ({
+      ...(requestBody as object),
+      messages: msgs,
+      model: selectedModelRef.current,
+      conversationId: convIdRef.current,
+      canvas: true,
+    }),
   });
 
   // Extract the latest artifact from assistant messages
@@ -244,7 +262,7 @@ export default function CanvasPage() {
     );
   }
 
-  if (userData.tier !== "SUPER_SPORK") {
+  if ((TIER_RANK[userData.tier] ?? 0) < 3) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
         <div className="w-16 h-16 rounded-2xl bg-[#a78bfa]/10 border border-[#a78bfa]/20 flex items-center justify-center text-2xl">
@@ -279,12 +297,19 @@ export default function CanvasPage() {
       {/* Chat pane */}
       <div className="w-[360px] flex flex-col border-r border-[#2a2a2a] shrink-0">
         <div className="px-3 py-3 border-b border-[#2a2a2a]">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🎨</span>
-            <span className="font-bold text-white text-sm">Spork Canvas</span>
-            <span className="text-[10px] bg-[#a78bfa]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
-              SUPER
-            </span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🎨</span>
+              <span className="font-bold text-white text-sm">Spork Canvas</span>
+              <span className="text-[10px] bg-[#a78bfa]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
+                SUPER
+              </span>
+            </div>
+            <ModelSelector
+              value={selectedModel}
+              onChange={setSelectedModel}
+              userTier={userData?.tier ?? "FREE"}
+            />
           </div>
         </div>
 

@@ -105,6 +105,13 @@ export function getMemoryLimit(tier: Tier): number | null {
   return 20; // FREE and SPORK_LITE
 }
 
+const TONE_PREFIXES: Record<string, string> = {
+  casual: "Respond in a casual, friendly, conversational tone — like you're texting a smart friend.",
+  professional: "Respond in a professional, formal tone — clear, precise, and business-appropriate.",
+  concise: "Be as concise as possible. Use bullet points when helpful. Skip preamble and filler.",
+  creative: "Be imaginative and expressive. Use vivid language, metaphors, and creative framing.",
+};
+
 export function getSystemPrompt(
   tier: Tier,
   options: {
@@ -114,10 +121,14 @@ export function getSystemPrompt(
     sporkCode?: boolean;
     canvas?: boolean;
     memoryContext?: string;
+    searchContext?: string;
+    tone?: string | null;
   } = {}
 ): string {
-  const { agentId, customInstructions, codeContext, sporkCode, canvas, memoryContext } =
+  const { agentId, customInstructions, codeContext, sporkCode, canvas, memoryContext, searchContext, tone } =
     options;
+
+  const tonePrefix = tone && TONE_PREFIXES[tone] ? TONE_PREFIXES[tone] : null;
 
   // Agent persona takes priority over everything
   if (agentId) {
@@ -160,11 +171,15 @@ Always include a 1-2 sentence explanation before the artifact. When the user req
     return base;
   }
 
+  const appendTone = (base: string) => tonePrefix ? `${base}\n\n${tonePrefix}` : base;
+
   // Paid tiers — no artificial constraints, just custom instructions + memory if set
   if (atLeast(tier, Tier.SUPER_SPORK)) {
     const parts: string[] = [];
+    if (tonePrefix) parts.push(tonePrefix);
     if (customInstructions) parts.push(`User's custom instructions: ${customInstructions}`);
     if (memoryContext) parts.push(`What you know about this user:\n${memoryContext}`);
+    if (searchContext) parts.push(`[Web Search Results]\n${searchContext}`);
     if (parts.length === 0) return "";
     return `You are Spork, a powerful AI assistant.\n\n${parts.join("\n\n")}`;
   }
@@ -173,8 +188,10 @@ Always include a 1-2 sentence explanation before the artifact. When the user req
     const parts: string[] = [
       "You are Spork Pro, a capable AI assistant with access to frontier models.",
     ];
+    if (tonePrefix) parts.push(tonePrefix);
     if (customInstructions) parts.push(`User's custom instructions: ${customInstructions}`);
     if (memoryContext) parts.push(`What you know about this user:\n${memoryContext}`);
+    if (searchContext) parts.push(`[Web Search Results]\n${searchContext}`);
     return parts.join("\n\n");
   }
 
@@ -183,8 +200,8 @@ Always include a 1-2 sentence explanation before the artifact. When the user req
     "You are Spork, a fast and helpful AI assistant. Provide accurate, clear responses. Be concise and focused — avoid unnecessary length or padding.";
 
   if (customInstructions) {
-    return `${freePrompt}\n\nUser context: ${customInstructions}`;
+    return appendTone(`${freePrompt}\n\nUser context: ${customInstructions}`);
   }
 
-  return freePrompt;
+  return appendTone(freePrompt);
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UserProfile } from "@clerk/nextjs";
-import { Sparkles, CheckCircle2, Save, Brain, Trash2, Key, Copy, X, Plus, Eye, EyeOff } from "lucide-react";
+import { Sparkles, CheckCircle2, Save, Brain, Trash2, Key, Copy, X, Plus, Eye, EyeOff, Cpu } from "lucide-react";
 import { FREE_DAILY_LIMIT, FREE_MODELS, PAID_MODELS } from "@/lib/models";
 import { hasClerkPublishableKey } from "@/lib/clerk-public";
 
@@ -13,6 +13,14 @@ interface UserData {
   dailyMessages: number;
   dailyLimit: number;
   customInstructions: string;
+  hasOpenrouterKey: boolean;
+}
+
+interface UsageStats {
+  totalConversations: number;
+  totalMessages: number;
+  totalSnippets: number;
+  totalMemories: number;
 }
 
 interface ApiToken {
@@ -106,6 +114,11 @@ export default function SettingsPage() {
   const [creatingToken, setCreatingToken] = useState(false);
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [showTokenForm, setShowTokenForm] = useState(false);
+  const [openrouterKey, setOpenrouterKey] = useState("");
+  const [showOrKey, setShowOrKey] = useState(false);
+  const [savingOrKey, setSavingOrKey] = useState(false);
+  const [orKeySaved, setOrKeySaved] = useState(false);
+  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
 
   useEffect(() => {
     fetch("/api/user")
@@ -119,8 +132,26 @@ export default function SettingsPage() {
     if (clerkEnabled) {
       fetch("/api/memory").then((r) => r.json()).then(setMemories).catch(() => {});
       fetch("/api/tokens").then((r) => r.json()).then(setTokens).catch(() => {});
+      fetch("/api/stats").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setUsageStats(d); }).catch(() => {});
     }
   }, [clerkEnabled]);
+
+  const handleSaveOpenrouterKey = async () => {
+    setSavingOrKey(true);
+    try {
+      await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ openrouterKey: openrouterKey || null }),
+      });
+      setOrKeySaved(true);
+      setOpenrouterKey("");
+      setTimeout(() => setOrKeySaved(false), 2000);
+      setUserData((prev) => prev ? { ...prev, hasOpenrouterKey: !!openrouterKey } : prev);
+    } finally {
+      setSavingOrKey(false);
+    }
+  };
 
   const handleSaveInstructions = async () => {
     if (instructions.length > 2000) return;
@@ -208,6 +239,26 @@ export default function SettingsPage() {
     <div className="flex-1 overflow-y-auto px-4 py-8 max-w-4xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-white mb-8">Settings</h1>
 
+      {/* Usage Stats */}
+      {usageStats && (
+        <div className="mb-8">
+          <h2 className="text-sm font-semibold text-[#666] uppercase tracking-wider mb-3">Account Stats</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Conversations", value: usageStats.totalConversations },
+              { label: "Messages", value: usageStats.totalMessages },
+              { label: "Snippets", value: usageStats.totalSnippets },
+              { label: "Memories", value: usageStats.totalMemories },
+            ].map((s) => (
+              <div key={s.label} className="bg-[#111] border border-[#2a2a2a] rounded-2xl px-4 py-3">
+                <p className="text-xs text-[#555] mb-1">{s.label}</p>
+                <p className="text-2xl font-black text-white">{s.value.toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 6-Tier Pricing Grid */}
       <div className="mb-10">
         <h2 className="text-sm font-semibold text-[#666] uppercase tracking-wider mb-4">Your Plan</h2>
@@ -283,6 +334,46 @@ export default function SettingsPage() {
           >
             <Save size={13} />
             {saved ? "Saved!" : saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+
+      {/* OpenRouter Key */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-1">
+          <Cpu size={14} className="text-[#a78bfa]" />
+          <h2 className="text-sm font-semibold text-[#666] uppercase tracking-wider">OpenRouter API Key</h2>
+          {userData?.hasOpenrouterKey && (
+            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Active</span>
+          )}
+        </div>
+        <p className="text-xs text-[#555] mb-3">
+          Use your own OpenRouter key to unlock all models and remove rate limits. Leave blank to use Spork&apos;s shared key.
+        </p>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type={showOrKey ? "text" : "password"}
+              value={openrouterKey}
+              onChange={(e) => setOpenrouterKey(e.target.value)}
+              placeholder={userData?.hasOpenrouterKey ? "Key saved — enter new key to replace" : "sk-or-..."}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-2xl px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#444] outline-none focus:border-[#3a3a3a] pr-9"
+            />
+            <button
+              type="button"
+              onClick={() => setShowOrKey((v) => !v)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#aaa] transition-colors"
+            >
+              {showOrKey ? <EyeOff size={13} /> : <Eye size={13} />}
+            </button>
+          </div>
+          <button
+            onClick={handleSaveOpenrouterKey}
+            disabled={savingOrKey}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#a78bfa] hover:bg-[#9061f9] text-white text-sm font-semibold rounded-2xl transition-colors disabled:opacity-50 shrink-0"
+          >
+            <Save size={13} />
+            {orKeySaved ? "Saved!" : savingOrKey ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

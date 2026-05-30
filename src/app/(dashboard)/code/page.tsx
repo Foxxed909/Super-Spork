@@ -10,8 +10,13 @@ import Link from "next/link";
 type EditorView = "chat" | "editor" | "inline";
 
 interface UserData {
-  tier: "FREE" | "SUPER_SPORK";
+  tier: string;
 }
+
+const TIER_RANK: Record<string, number> = {
+  FREE: 0, SPORK_LITE: 1, SPORK_PRO: 2, SUPER_SPORK: 3,
+  SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
+};
 
 export default function CodePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -33,7 +38,7 @@ export default function CodePage() {
     );
   }
 
-  if (userData.tier !== "SUPER_SPORK") {
+  if ((TIER_RANK[userData.tier] ?? 0) < 3) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
         <div className="w-16 h-16 rounded-2xl bg-[#a78bfa]/10 border border-[#a78bfa]/20 flex items-center justify-center">
