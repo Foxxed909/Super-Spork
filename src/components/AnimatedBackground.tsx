@@ -212,6 +212,30 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
       };
 
       const bits: Bit[] = Array.from({ length: MAX }, () => spawn());
+
+      // Background starfield — twinkles + gets gravitationally lensed near the hole.
+      type FarStar = { x: number; y: number; r: number; tw: number; sp: number };
+      const FARS = 120;
+      const fars: FarStar[] = Array.from({ length: FARS }, () => ({
+        x: Math.random(), y: Math.random(),
+        r: Math.random() * 1.2 + 0.3,
+        tw: Math.random() * Math.PI * 2,
+        sp: Math.random() * 0.05 + 0.01,
+      }));
+
+      // The doomed star — a sun that slowly spirals in and is torn apart (a
+      // tidal disruption event). It loses mass into a glowing spaghettified
+      // stream that wraps the horizon, then a new star wanders in.
+      type Sun = { ang: number; dist: number; spin: number; mass: number; cool: number };
+      const newSun = (): Sun => ({
+        ang: Math.random() * Math.PI * 2,
+        dist: reach() * (0.85 + Math.random() * 0.15),
+        spin: 0.5 + Math.random() * 0.3,
+        mass: 1,
+        cool: 0, // respawn cooldown after full disruption
+      });
+      let sun: Sun = newSun();
+
       let t = 0;
       let pulse = 0; // frames since last feeding pulse
       const PULSE_EVERY = 270; // ~4.5s at 60fps: the periodic "suck" event (< 5s)
@@ -223,6 +247,20 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
         // Trails: fade the previous frame instead of clearing (motion blur).
         ctx.fillStyle = "rgba(4,2,8,0.28)";
         ctx.fillRect(0, 0, w, h);
+
+        // Background starfield — distant stars twinkle and bend toward the hole
+        // (a soft gravitational-lensing displacement that grows close to center).
+        for (const s of fars) {
+          s.tw += s.sp;
+          let sx = s.x * w, sy = s.y * h;
+          const dx = sx - X, dy = sy - Y, dd = Math.hypot(dx, dy) || 1;
+          const lens = (rh * rh * 2.2) / (dd + rh); // pull light inward
+          sx -= (dx / dd) * lens;
+          sy -= (dy / dd) * lens;
+          const a = 0.25 + Math.sin(s.tw) * 0.25;
+          ctx.fillStyle = `rgba(220,225,255,${Math.max(0, a)})`;
+          ctx.fillRect(sx, sy, s.r, s.r);
+        }
 
         // Accretion glow halo around the horizon.
         const halo = ctx.createRadialGradient(X, Y, rh * 0.6, X, Y, rh * 4.2);
@@ -283,6 +321,95 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
           ctx.moveTo(px, py);
           ctx.lineTo(tx, ty);
           ctx.stroke();
+        }
+
+        // ── The doomed star: slow infall + tidal disruption ──────────────
+        if (sun.cool > 0) {
+          sun.cool--;
+          if (sun.cool === 0) sun = newSun();
+        } else {
+          const tidalR = rh * 6; // where spaghettification begins
+          // Slow inward spiral — deliberately gentle so the stretch is visible.
+          sun.dist -= 0.35 + (rh * 2.2) / (sun.dist + rh);
+          sun.ang += (sun.spin * (rh * 0.7)) / (sun.dist + rh * 0.5);
+
+          const disrupting = sun.dist < tidalR;
+          const stretch = disrupting
+            ? Math.min(1, (tidalR - sun.dist) / (tidalR - rh)) // 0→1 as it nears
+            : 0;
+          const sx = X + Math.cos(sun.ang) * sun.dist;
+          const sy = Y + Math.sin(sun.ang) * sun.dist;
+
+          // Tidal stream: a luminous spaghettified arc trailing the star along
+          // its orbit, brightening + whitening as plasma falls toward the disk.
+          if (disrupting) {
+            const tail = 26;
+            ctx.lineWidth = 1;
+            for (let k = 1; k <= tail; k++) {
+              const f = k / tail;
+              const a2 = sun.ang - f * (1.6 + stretch * 2.2);   // wraps the hole
+              const d2 = sun.dist + f * (40 + stretch * 90) - f * f * 30;
+              if (d2 <= rh) break;
+              const hx = X + Math.cos(a2) * d2;
+              const hy = Y + Math.sin(a2) * d2;
+              const heat = 1 - f;                 // hotter (whiter) near the head
+              const hue = 50 - heat * 30;         // gold → orange-red along tail
+              ctx.strokeStyle = `hsla(${hue}, 100%, ${55 + heat * 35}%, ${(1 - f) * 0.8 * (0.4 + stretch)})`;
+              ctx.lineWidth = (2.4 + stretch * 2) * (1 - f) + 0.4;
+              ctx.beginPath();
+              const pa = sun.ang - (f - 1 / tail) * (1.6 + stretch * 2.2);
+              const pd = sun.dist + (f - 1 / tail) * (40 + stretch * 90) - (f - 1 / tail) ** 2 * 30;
+              ctx.moveTo(X + Math.cos(pa) * pd, Y + Math.sin(pa) * pd);
+              ctx.lineTo(hx, hy);
+              ctx.stroke();
+            }
+          }
+
+          // The star's core — stretched into an ellipse as it spaghettifies,
+          // glowing hotter the closer it gets.
+          const coreR = (7 + (1 - stretch) * 6) * sun.mass;
+          const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, coreR * 3.2);
+          glow.addColorStop(0, `rgba(255,${245 - stretch * 80},${200 - stretch * 140},0.95)`);
+          glow.addColorStop(0.5, `rgba(255,${180 - stretch * 90},80,0.35)`);
+          glow.addColorStop(1, "rgba(255,120,40,0)");
+          ctx.fillStyle = glow;
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(sun.ang);
+          ctx.scale(1 + stretch * 2.4, Math.max(0.35, 1 - stretch * 0.55)); // tidal elongation
+          ctx.beginPath();
+          ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          // Fully torn apart once it crosses the horizon → flare + cooldown.
+          if (sun.dist <= rh * 1.25) {
+            ctx.fillStyle = "rgba(255,240,210,0.5)";
+            ctx.beginPath();
+            ctx.arc(X, Y, rh * 3, 0, Math.PI * 2);
+            ctx.fill();
+            sun.cool = 90 + Math.floor(Math.random() * 90); // 1.5–3s before next star
+          }
+        }
+
+        // Relativistic jets: twin beams blast perpendicular to the disk while
+        // the hole feeds — brightest right at the pulse.
+        if (feeding) {
+          const jet = reach() * 0.9;
+          const jw = 10 + (24 - phase) * 0.8;
+          for (const dir of [-1, 1]) {
+            const ex = X, ey = Y + dir * jet;
+            const grad = ctx.createLinearGradient(X, Y, ex, ey);
+            grad.addColorStop(0, "rgba(200,210,255,0.55)");
+            grad.addColorStop(1, "rgba(120,90,255,0)");
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(X - jw, Y);
+            ctx.lineTo(X + jw, Y);
+            ctx.lineTo(ex, ey);
+            ctx.closePath();
+            ctx.fill();
+          }
         }
 
         // Photon ring: bright rim just outside the horizon.
