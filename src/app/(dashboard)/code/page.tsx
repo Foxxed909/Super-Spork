@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CodeChat } from "@/components/code/CodeChat";
 import { CodeEditor } from "@/components/code/CodeEditor";
-import { Sparkles, MessageSquare, Code2, Layers } from "lucide-react";
+import { Sparkles, MessageSquare, Code2, Layers, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -18,10 +18,19 @@ const TIER_RANK: Record<string, number> = {
   SPORK_ULTRA: 4, SPORK_INFINITY: 5, SPORK_GODMODE: 6,
 };
 
+const STARTER_CODE = `// Spork Code — your AI pair programmer.
+// Paste code and hit "Find & Fix", or describe what to build.
+
+function greet(name) {
+  console.log("Hello, " + name)
+}
+`;
+
 export default function CodePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [mode, setMode] = useState<EditorView>("chat");
-  const [editorCode, setEditorCode] = useState("// Paste or write your code here\n");
+  const [editorCode, setEditorCode] = useState(STARTER_CODE);
+  const [fifSignal, setFifSignal] = useState(0);
 
   useEffect(() => {
     fetch("/api/user")
@@ -29,6 +38,9 @@ export default function CodePage() {
       .then(setUserData)
       .catch(() => {});
   }, []);
+
+  // Running FIF from the editor switches focus to the chat side and fires it.
+  const runFif = () => setFifSignal((n) => n + 1);
 
   if (!userData) {
     return (
@@ -56,10 +68,10 @@ export default function CodePage() {
             <Sparkles size={14} className="text-[#a78bfa]" /> Unlimited coding sessions
           </div>
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#a78bfa]" /> Monaco code editor
+            <Sparkles size={14} className="text-[#a78bfa]" /> Monaco editor + Find &amp; Fix
           </div>
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#a78bfa]" /> Claude, GPT-4o & more
+            <Sparkles size={14} className="text-[#a78bfa]" /> Qwen3 Coder, Claude, GPT &amp; more
           </div>
         </div>
         <Link
@@ -74,9 +86,20 @@ export default function CodePage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Mode tabs */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-[#1e1e1e]">
-        <ModeTabs mode={mode} onChange={setMode} />
+      {/* Branded header + mode switcher */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#1e1e1e]">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#a78bfa]/30 to-[#a78bfa]/10 border border-[#a78bfa]/25 flex items-center justify-center">
+            <Terminal size={15} className="text-[#a78bfa]" />
+          </div>
+          <div className="leading-tight">
+            <h1 className="text-sm font-bold text-white">Spork Code</h1>
+            <p className="text-[10px] text-[#555]">AI pair programmer</p>
+          </div>
+        </div>
+        <div className="ml-auto">
+          <ModeTabs mode={mode} onChange={setMode} />
+        </div>
       </div>
 
       {/* Content */}
@@ -87,11 +110,11 @@ export default function CodePage() {
 
         {mode === "editor" && (
           <div className="flex h-full">
-            <div className="flex-1 border-r border-[#2a2a2a]">
-              <CodeEditor value={editorCode} onChange={setEditorCode} />
+            <div className="flex-1 border-r border-[#2a2a2a] min-w-0">
+              <CodeEditor value={editorCode} onChange={setEditorCode} onRunFif={runFif} />
             </div>
-            <div className="w-[420px]">
-              <CodeChat userTier={userData.tier} contextCode={editorCode} />
+            <div className="w-[440px] shrink-0">
+              <CodeChat userTier={userData.tier} contextCode={editorCode} fifSignal={fifSignal} />
             </div>
           </div>
         )}
@@ -99,10 +122,10 @@ export default function CodePage() {
         {mode === "inline" && (
           <div className="flex flex-col h-full">
             <div className="h-1/2 border-b border-[#2a2a2a]">
-              <CodeEditor value={editorCode} onChange={setEditorCode} />
+              <CodeEditor value={editorCode} onChange={setEditorCode} onRunFif={runFif} />
             </div>
             <div className="h-1/2">
-              <CodeChat userTier={userData.tier} contextCode={editorCode} />
+              <CodeChat userTier={userData.tier} contextCode={editorCode} fifSignal={fifSignal} />
             </div>
           </div>
         )}
