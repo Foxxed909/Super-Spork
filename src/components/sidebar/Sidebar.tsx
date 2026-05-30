@@ -369,23 +369,27 @@ export function Sidebar() {
             />
           </div>
         ) : (
-          <Link
-            href={`/chat/${conv.id}`}
-            onDoubleClick={(e) => startRename(e, conv)}
-            className={cn(
-              "flex items-center justify-between px-3 py-2 rounded-full text-sm transition-colors",
-              isActive ? "bg-[#1e1e1e] text-white" : "text-[#aaa] hover:bg-[#1a1a1a] hover:text-white"
-            )}
-          >
-            <div className="flex items-center gap-2 min-w-0">
+          // Row actions sit OUTSIDE the <Link> (a <button> can't be a
+          // descendant of an <a> — that's a hydration error). The Link holds
+          // only the title; the action buttons overlay its right edge as a
+          // sibling, with right padding on the Link reserving their space.
+          <>
+            <Link
+              href={`/chat/${conv.id}`}
+              onDoubleClick={(e) => startRename(e, conv)}
+              className={cn(
+                "flex items-center gap-2 pl-3 pr-20 py-2 rounded-full text-sm transition-colors",
+                isActive ? "bg-[#1e1e1e] text-white" : "text-[#aaa] hover:bg-[#1a1a1a] hover:text-white"
+              )}
+            >
               {conv.pinned && <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />}
               {!conv.pinned && <MessageSquare size={14} className="shrink-0 text-[#555]" />}
               <div className="min-w-0">
                 <p className="truncate font-medium leading-tight">{conv.title}</p>
                 <p className="text-xs text-[#555] mt-0.5">{formatDate(conv.updatedAt)}</p>
               </div>
-            </div>
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+            </Link>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFolderMenuConvId(folderMenuConvId === conv.id ? null : conv.id); }}
                 className="p-1 rounded-full text-[#555] hover:text-[#a78bfa] transition-all"
@@ -403,11 +407,12 @@ export function Sidebar() {
               <button
                 onClick={(e) => handleDelete(e, conv.id)}
                 className="p-1 rounded-full text-[#555] hover:text-red-400 transition-all"
+                title="Delete"
               >
                 <Trash2 size={12} />
               </button>
             </div>
-          </Link>
+          </>
         )}
 
         {/* Move-to-folder dropdown */}

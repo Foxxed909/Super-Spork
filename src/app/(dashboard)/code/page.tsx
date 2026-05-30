@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CodeChat } from "@/components/code/CodeChat";
 import { CodeEditor } from "@/components/code/CodeEditor";
 import { Sparkles, MessageSquare, Code2, Layers, Terminal } from "lucide-react";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -85,9 +86,12 @@ export default function CodePage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full overflow-hidden bg-[#040208]">
+      {/* Black-hole accretion backdrop */}
+      <AnimatedBackground mode="blackhole" />
+
       {/* Branded header + mode switcher */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#1e1e1e]">
+      <div className="relative z-10 flex items-center gap-3 px-4 py-2.5 border-b border-[#1e1e1e] bg-black/30 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#a78bfa]/30 to-[#a78bfa]/10 border border-[#a78bfa]/25 flex items-center justify-center">
             <Terminal size={15} className="text-[#a78bfa]" />
@@ -103,7 +107,7 @@ export default function CodePage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="relative z-10 flex-1 overflow-hidden">
         {mode === "chat" && (
           <CodeChat userTier={userData.tier} />
         )}

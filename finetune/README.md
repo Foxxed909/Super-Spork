@@ -63,6 +63,23 @@ Defaults: 4-bit QLoRA on `nvidia/NVIDIA-Nemotron-Nano-9B-v2`, r=16, 3 epochs,
 effective batch 16, 4096-token sequences. Adapter lands in
 `finetune/output/spork-nemotron-lora/`. Tune everything in `config.yaml`.
 
+### Train a second model (Gemma) on the same data
+
+The trainer is fully config-driven, so a different base model is just a
+different config — same dataset, same command:
+
+```bash
+python finetune/train_lora.py --config finetune/config-gemma.yaml
+```
+
+`config-gemma.yaml` targets `google/gemma-2-27b-it` (4-bit QLoRA ≈ 40GB VRAM —
+A100 40GB / L40S 48GB). On a single 24GB card, change `model_id` to
+`google/gemma-2-9b-it` and it works unchanged. Gemma 2 needs eager attention
+during training, which the config sets via `attn_implementation: "eager"`
+(honored by `train_lora.py`; Nemotron leaves it unset). The adapter lands in
+`finetune/output/spork-gemma-lora/`. Train both, then A/B them in **Arena**
+to see which one Spork's data shapes into the better Berry.
+
 ## 3. Serve it and wire it into Spork
 
 On the GPU host, serve the base model + adapter with an OpenAI-compatible API

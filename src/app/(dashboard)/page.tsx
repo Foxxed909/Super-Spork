@@ -39,6 +39,7 @@ const BG_MODES: { mode: BgMode; label: string }[] = [
   { mode: "rain",  label: "🌧 Rain" },
   { mode: "storm", label: "⛈ Storm" },
   { mode: "void",  label: "◎ Void" },
+  { mode: "blackhole", label: "● Black Hole" },
 ];
 
 export default function HomePage() {

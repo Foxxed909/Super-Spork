@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export type BgMode = "stars" | "rain" | "storm" | "void";
+export type BgMode = "stars" | "rain" | "storm" | "void" | "blackhole";
 
 interface Props { mode?: BgMode }
 
@@ -178,6 +178,117 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
           ctx.fill();
         }
         t += 0.012;
+        raf = requestAnimationFrame(draw);
+      };
+      draw();
+    }
+
+    // ── Black hole ───────────────────────────────────────────
+    // A central event horizon with a glowing accretion disk; matter
+    // spirals inward, accelerating + stretching as it nears the horizon,
+    // then is consumed and respawns at the outer edge. A periodic
+    // "feeding pulse" flings in a fresh burst of matter.
+    if (mode === "blackhole") {
+      const cx = () => canvas.width / 2;
+      const cy = () => canvas.height / 2;
+      const horizon = () => Math.max(26, Math.min(canvas.width, canvas.height) * 0.06);
+
+      type Bit = { ang: number; dist: number; spin: number; size: number; hue: number; alive: boolean };
+      const MAX = 240;
+      const reach = () => Math.hypot(canvas.width, canvas.height) * 0.55;
+
+      const spawn = (burst = false): Bit => {
+        const d = burst
+          ? reach() * (0.7 + Math.random() * 0.3)
+          : reach() * (0.25 + Math.random() * 0.75);
+        return {
+          ang: Math.random() * Math.PI * 2,
+          dist: d,
+          spin: (Math.random() * 0.6 + 0.5) * (Math.random() < 0.5 ? 1 : 1), // all co-rotating
+          size: Math.random() * 1.6 + 0.5,
+          hue: 255 + Math.random() * 35, // violet→blue accretion
+          alive: true,
+        };
+      };
+
+      const bits: Bit[] = Array.from({ length: MAX }, () => spawn());
+      let t = 0;
+      let pulse = 0; // frames since last feeding pulse
+      const PULSE_EVERY = 260; // ~4–5s at 60fps: the periodic "suck" event
+
+      const draw = () => {
+        const w = canvas.width, h = canvas.height;
+        const X = cx(), Y = cy(), rh = horizon();
+
+        // Trails: fade the previous frame instead of clearing (motion blur).
+        ctx.fillStyle = "rgba(4,2,8,0.28)";
+        ctx.fillRect(0, 0, w, h);
+
+        // Accretion glow halo around the horizon.
+        const halo = ctx.createRadialGradient(X, Y, rh * 0.6, X, Y, rh * 4.2);
+        halo.addColorStop(0, "rgba(167,139,250,0.22)");
+        halo.addColorStop(0.4, "rgba(120,80,255,0.10)");
+        halo.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(X, Y, rh * 4.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Feeding pulse — periodically inject a burst of fresh matter.
+        pulse++;
+        const feeding = pulse % PULSE_EVERY < 24;
+        if (pulse % PULSE_EVERY === 0) {
+          let injected = 0;
+          for (const b of bits) {
+            if (!b.alive && injected < 60) { Object.assign(b, spawn(true)); injected++; }
+          }
+        }
+
+        for (const b of bits) {
+          if (!b.alive) {
+            // respawn drifting matter from the outer edge
+            if (Math.random() < 0.03) Object.assign(b, spawn());
+            continue;
+          }
+          // Gravity: pull inward; orbital speed rises sharply near the horizon.
+          const pull = 0.6 + (rh * 14) / (b.dist + rh);
+          b.dist -= pull;
+          b.ang += (b.spin * (rh * 0.9)) / (b.dist + rh * 0.5);
+
+          if (b.dist <= rh) { b.alive = false; continue; } // consumed
+
+          // Spaghettification: stretch the bit along its orbit as it falls in.
+          const near = 1 - Math.min(1, (b.dist - rh) / (reach() * 0.5));
+          const px = X + Math.cos(b.ang) * b.dist;
+          const py = Y + Math.sin(b.ang) * b.dist;
+          const tx = X + Math.cos(b.ang + 0.18) * (b.dist + 10 + near * 40);
+          const ty = Y + Math.sin(b.ang + 0.18) * (b.dist + 10 + near * 40);
+
+          ctx.strokeStyle = `hsla(${b.hue}, 90%, ${55 + near * 25}%, ${0.18 + near * 0.55})`;
+          ctx.lineWidth = b.size * (1 + near * 1.5);
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(tx, ty);
+          ctx.stroke();
+        }
+
+        // Photon ring: bright rim just outside the horizon.
+        ctx.strokeStyle = `rgba(190,170,255,${feeding ? 0.9 : 0.55})`;
+        ctx.lineWidth = 2 + (feeding ? 1.5 : 0);
+        ctx.shadowColor = "#b9a6ff";
+        ctx.shadowBlur = feeding ? 28 : 16;
+        ctx.beginPath();
+        ctx.arc(X, Y, rh * 1.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Event horizon: pure black void.
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(X, Y, rh, 0, Math.PI * 2);
+        ctx.fill();
+
+        t += 0.01;
         raf = requestAnimationFrame(draw);
       };
       draw();

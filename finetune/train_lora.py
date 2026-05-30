@@ -62,12 +62,20 @@ def main() -> None:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    # Gemma 2 needs eager attention during training (its soft-capping is
+    # unstable under SDPA/flash). Set `attn_implementation: "eager"` in the
+    # config for Gemma; leave unset for Nemotron and others.
+    model_kwargs = {}
+    if cfg.get("attn_implementation"):
+        model_kwargs["attn_implementation"] = cfg["attn_implementation"]
+
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         quantization_config=bnb,
         device_map="auto",
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
+        **model_kwargs,
     )
 
     lora = LoraConfig(

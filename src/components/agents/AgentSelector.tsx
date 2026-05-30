@@ -38,8 +38,7 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
 
   return (
     <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
+      <div
         className={cn(
           "flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors",
           activeAgent
@@ -49,22 +48,34 @@ export function AgentSelector({ value, onChange, userTier }: AgentSelectorProps)
       >
         {activeAgent ? (
           <>
-            <span>{activeAgent.emoji}</span>
-            <span className="font-medium">{activeAgent.name}</span>
             <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              className="flex items-center gap-2"
+            >
+              <span>{activeAgent.emoji}</span>
+              <span className="font-medium">{activeAgent.name}</span>
+            </button>
+            <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onChange(null); }}
               className="ml-0.5 text-[#666] hover:text-white"
+              aria-label="Clear agent"
             >
               <X size={12} />
             </button>
           </>
         ) : (
-          <>
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="flex items-center gap-2"
+          >
             <span className="text-[#555]">No agent</span>
             <ChevronDown size={14} className="text-[#555]" />
-          </>
+          </button>
         )}
-      </button>
+      </div>
 
       {open && (
         <div className="absolute top-full left-0 mt-1 w-64 bg-[#141414] border border-[#2a2a2a] rounded-2xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
