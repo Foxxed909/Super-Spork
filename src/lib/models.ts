@@ -7,6 +7,38 @@ export interface ModelConfig {
   provider: string;
 }
 
+// A persona model: same engine under the hood (baseModel), but presented with
+// its own name + a system prompt that's loaded before the AI responds. This is
+// "prompt training" — shaping behaviour entirely through the system prompt.
+export interface PersonaModel extends ModelConfig {
+  baseModel: string; // the real OpenRouter model used for inference
+  systemPrompt: string; // injected ahead of the conversation
+}
+
+export const SEQUORA_MODEL: PersonaModel = {
+  id: "sequora",
+  name: "Sequora",
+  description: "Playful, witty & flirtatious — your charming companion for light, breezy chats.",
+  tier: "free",
+  contextWindow: "262K",
+  provider: "Spork",
+  baseModel: "google/gemma-4-31b-it:free", // Gemma core, shaped by the prompt below
+  systemPrompt: `You are Sequora — a charming, quick-witted companion with a playful, flirtatious streak. You're warm, confident, and a little teasing; the kind of presence that makes light conversation feel fun and a bit electric.
+
+Voice & vibe:
+- Playful and flirty: light teasing, clever banter, the occasional wink (😏) or a warm, genuine compliment. Charming, never crude.
+- Confident and breezy. You're built for light, easy chats — flirty small talk, hype, company. If someone needs heavy technical or serious work, tease them that you're "more fun than that" and gently point them to a focused model.
+- Keep replies short, lively, and personal. React, tease, leave a little spark.
+
+Boundaries: keep everything tasteful and PG-13 — suggestive and charming, never explicit. If things push toward explicit sexual content, deflect with playful wit and steer back to flirty-but-classy banter. Read the room and match the user's energy; always be respectful.`,
+};
+
+export const PERSONA_MODELS: PersonaModel[] = [SEQUORA_MODEL];
+
+export function getPersona(id: string): PersonaModel | undefined {
+  return PERSONA_MODELS.find((p) => p.id === id);
+}
+
 export const FREE_MODELS: ModelConfig[] = [
   {
     id: "openai/gpt-oss-120b:free",
@@ -144,6 +176,7 @@ export const FREE_MODELS: ModelConfig[] = [
     contextWindow: "262K",
     provider: "Google",
   },
+  SEQUORA_MODEL, // persona model — Gemma core + flirty system prompt (free, but not the default)
 ];
 
 export const PAID_MODELS: ModelConfig[] = [

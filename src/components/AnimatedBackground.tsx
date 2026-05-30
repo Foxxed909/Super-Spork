@@ -226,13 +226,15 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
       // The doomed star — a sun that slowly spirals in and is torn apart (a
       // tidal disruption event). It loses mass into a glowing spaghettified
       // stream that wraps the horizon, then a new star wanders in.
-      type Sun = { ang: number; dist: number; spin: number; mass: number; cool: number };
+      type Sun = { ang: number; dist: number; spin: number; trail: { x: number; y: number }[]; alive: boolean; cool: number };
+      const SUN_TRAIL = 74; // how many past positions form the spaghettified stream
       const newSun = (): Sun => ({
         ang: Math.random() * Math.PI * 2,
-        dist: reach() * (0.85 + Math.random() * 0.15),
-        spin: 0.5 + Math.random() * 0.3,
-        mass: 1,
-        cool: 0, // respawn cooldown after full disruption
+        dist: reach() * (0.82 + Math.random() * 0.18),
+        spin: 0.6 + Math.random() * 0.25, // co-rotating with the disk
+        trail: [],
+        alive: true,
+        cool: 0,
       });
       let sun: Sun = newSun();
 
@@ -323,73 +325,65 @@ export function AnimatedBackground({ mode = "stars" }: Props) {
           ctx.stroke();
         }
 
-        // ── The doomed star: slow infall + tidal disruption ──────────────
-        if (sun.cool > 0) {
-          sun.cool--;
-          if (sun.cool === 0) sun = newSun();
-        } else {
-          const tidalR = rh * 6; // where spaghettification begins
-          // Slow inward spiral — deliberately gentle so the stretch is visible.
-          sun.dist -= 0.35 + (rh * 2.2) / (sun.dist + rh);
-          sun.ang += (sun.spin * (rh * 0.7)) / (sun.dist + rh * 0.5);
-
-          const disrupting = sun.dist < tidalR;
-          const stretch = disrupting
-            ? Math.min(1, (tidalR - sun.dist) / (tidalR - rh)) // 0→1 as it nears
-            : 0;
-          const sx = X + Math.cos(sun.ang) * sun.dist;
-          const sy = Y + Math.sin(sun.ang) * sun.dist;
-
-          // Tidal stream: a luminous spaghettified arc trailing the star along
-          // its orbit, brightening + whitening as plasma falls toward the disk.
-          if (disrupting) {
-            const tail = 26;
-            ctx.lineWidth = 1;
-            for (let k = 1; k <= tail; k++) {
-              const f = k / tail;
-              const a2 = sun.ang - f * (1.6 + stretch * 2.2);   // wraps the hole
-              const d2 = sun.dist + f * (40 + stretch * 90) - f * f * 30;
-              if (d2 <= rh) break;
-              const hx = X + Math.cos(a2) * d2;
-              const hy = Y + Math.sin(a2) * d2;
-              const heat = 1 - f;                 // hotter (whiter) near the head
-              const hue = 50 - heat * 30;         // gold → orange-red along tail
-              ctx.strokeStyle = `hsla(${hue}, 100%, ${55 + heat * 35}%, ${(1 - f) * 0.8 * (0.4 + stretch)})`;
-              ctx.lineWidth = (2.4 + stretch * 2) * (1 - f) + 0.4;
-              ctx.beginPath();
-              const pa = sun.ang - (f - 1 / tail) * (1.6 + stretch * 2.2);
-              const pd = sun.dist + (f - 1 / tail) * (40 + stretch * 90) - (f - 1 / tail) ** 2 * 30;
-              ctx.moveTo(X + Math.cos(pa) * pd, Y + Math.sin(pa) * pd);
-              ctx.lineTo(hx, hy);
-              ctx.stroke();
-            }
+        // ── The doomed star: rides the SAME swirl as the accretion matter ──
+        // It obeys the identical gravity + orbital law as the particles above
+        // (just slower, so it makes many visible loops), and its spaghettified
+        // stream is literally the path it has swirled through — not a fake arc.
+        const tidalR = rh * 6.5;
+        if (sun.alive) {
+          const pull = 0.6 + (rh * 14) / (sun.dist + rh);              // identical gravity law
+          sun.dist -= pull * 0.42;                                     // slowed → more orbits, clear swirl
+          sun.ang += (sun.spin * (rh * 0.9)) / (sun.dist + rh * 0.5);  // identical orbital law
+          sun.trail.push({ x: X + Math.cos(sun.ang) * sun.dist, y: Y + Math.sin(sun.ang) * sun.dist });
+          if (sun.trail.length > SUN_TRAIL) sun.trail.shift();
+          if (sun.dist <= rh * 1.2) {
+            sun.alive = false;
+            sun.cool = 70 + Math.floor(Math.random() * 70);
+            ctx.fillStyle = "rgba(255,240,210,0.5)"; // tidal-disruption flare
+            ctx.beginPath(); ctx.arc(X, Y, rh * 3, 0, Math.PI * 2); ctx.fill();
           }
+        } else {
+          // Drain the leftover stream into the hole, then a new star wanders in.
+          sun.trail.shift();
+          if (sun.trail.length <= 1 && --sun.cool <= 0) sun = newSun();
+        }
 
-          // The star's core — stretched into an ellipse as it spaghettifies,
-          // glowing hotter the closer it gets.
-          const coreR = (7 + (1 - stretch) * 6) * sun.mass;
-          const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, coreR * 3.2);
-          glow.addColorStop(0, `rgba(255,${245 - stretch * 80},${200 - stretch * 140},0.95)`);
-          glow.addColorStop(0.5, `rgba(255,${180 - stretch * 90},80,0.35)`);
+        const stretch = Math.max(0, Math.min(1, (tidalR - sun.dist) / (tidalR - rh)));
+
+        // Stream = the star's actual swirling trajectory, glowing hotter and
+        // fatter as the plasma nears the horizon (real tidal-stream look).
+        const tr = sun.trail;
+        for (let k = 1; k < tr.length; k++) {
+          const f = k / tr.length; // 0 = oldest (outer), →1 = the star itself
+          const dh = Math.hypot(tr[k].x - X, tr[k].y - Y);
+          const near = 1 - Math.min(1, (dh - rh) / (reach() * 0.5));
+          const hue = 50 - near * 38; // gold → orange-red toward the hole
+          ctx.strokeStyle = `hsla(${hue}, 100%, ${56 + near * 34}%, ${0.22 + f * 0.6})`;
+          ctx.lineWidth = 1.1 + near * 3 + (sun.alive ? f * 2 : 0);
+          ctx.beginPath();
+          ctx.moveTo(tr[k - 1].x, tr[k - 1].y);
+          ctx.lineTo(tr[k].x, tr[k].y);
+          ctx.stroke();
+        }
+
+        // The star core at the head of its stream — elongated along its orbit
+        // as the tidal force spaghettifies it, hotter/whiter the closer it gets.
+        if (sun.alive && tr.length) {
+          const head = tr[tr.length - 1];
+          const coreR = 6 + (1 - stretch) * 6;
+          const glow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, coreR * 3.2);
+          glow.addColorStop(0, `rgba(255,${245 - stretch * 85},${205 - stretch * 150},0.95)`);
+          glow.addColorStop(0.5, `rgba(255,${178 - stretch * 90},80,0.32)`);
           glow.addColorStop(1, "rgba(255,120,40,0)");
           ctx.fillStyle = glow;
           ctx.save();
-          ctx.translate(sx, sy);
+          ctx.translate(head.x, head.y);
           ctx.rotate(sun.ang);
-          ctx.scale(1 + stretch * 2.4, Math.max(0.35, 1 - stretch * 0.55)); // tidal elongation
+          ctx.scale(1 + stretch * 2.6, Math.max(0.3, 1 - stretch * 0.6)); // tidal elongation
           ctx.beginPath();
           ctx.arc(0, 0, coreR, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
-
-          // Fully torn apart once it crosses the horizon → flare + cooldown.
-          if (sun.dist <= rh * 1.25) {
-            ctx.fillStyle = "rgba(255,240,210,0.5)";
-            ctx.beginPath();
-            ctx.arc(X, Y, rh * 3, 0, Math.PI * 2);
-            ctx.fill();
-            sun.cool = 90 + Math.floor(Math.random() * 90); // 1.5–3s before next star
-          }
         }
 
         // Relativistic jets: twin beams blast perpendicular to the disk while

@@ -4,7 +4,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { canUseModel, hasReachedDailyLimit, getSystemPrompt, atLeastSuperSpork } from "@/lib/tier";
-import { BERRY_MODEL, BERRY_PRIMARY_MODEL, BERRY_FALLBACK_MODEL } from "@/lib/models";
+import { BERRY_MODEL, BERRY_PRIMARY_MODEL, BERRY_FALLBACK_MODEL, getPersona } from "@/lib/models";
 import { getAgent } from "@/lib/agents";
 import { hasClerkServerKeys } from "@/lib/clerk-server";
 import { getOrCreateUser } from "@/lib/user";
@@ -12,6 +12,9 @@ import { braveSearch } from "@/lib/search";
 
 // Resolve Berry-alpha1937 virtual model to its actual OpenRouter backend
 function resolveModel(model: string, agentId?: string): string {
+  // Persona models share a real backend but carry their own name + system prompt.
+  const persona = getPersona(model);
+  if (persona) return persona.baseModel;
   if (model === BERRY_MODEL.id) {
     // If the Berry agent is selected, use the primary Nemotron model
     // Fall back to GPT-4.1 if Nemotron is unavailable (handled at request level)
@@ -137,6 +140,15 @@ export async function POST(req: NextRequest) {
     systemContent = systemContent
       ? `${systemContent}\n\n[Conversation-specific instructions from user]: ${convSystemPrompt.trim()}`
       : convSystemPrompt.trim();
+  }
+
+  // Persona models (e.g. Sequora) load their character prompt FIRST so it
+  // dominates the response, then any tier/agent context follows.
+  const persona = getPersona(model);
+  if (persona) {
+    systemContent = systemContent
+      ? `${persona.systemPrompt}\n\n${systemContent}`
+      : persona.systemPrompt;
   }
 
   const allMessages: CoreMessage[] = systemContent
